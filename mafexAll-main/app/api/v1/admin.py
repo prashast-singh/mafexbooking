@@ -28,7 +28,7 @@ from app.schemas.admin import (
 )
 from app.schemas.amenity import AmenityCreate, AmenityOut, AmenityUpdate
 from app.schemas.booking import BookingOut
-from app.schemas.booking_admin import BookingDecisionBody
+from app.schemas.booking_admin import BookingDecisionBody, PendingBookingOut
 from app.schemas.booking_series import (
     AdminBookingDetailOut,
     AdminBookingListItem,
@@ -154,7 +154,7 @@ async def admin_user_email_history(
     return [UserEmailHistoryOut.model_validate(r) for r in rows]
 
 
-@router.get("/bookings/pending", response_model=list[BookingOut])
+@router.get("/bookings/pending", response_model=list[PendingBookingOut])
 async def list_pending_bookings(
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -169,7 +169,32 @@ async def list_pending_bookings(
         skip=skip,
         limit=limit,
     )
-    return [BookingOut.model_validate(b) for b in rows]
+    if not rows:
+        return []
+
+    room_ids = {b.room_id for b in rows}
+    unit_ids = {b.unit_id for b in rows}
+    user_ids = {b.user_id for b in rows}
+    room_rows = await db.execute(select(Room.id, Room.name).where(Room.id.in_(room_ids)))
+    unit_rows = await db.execute(select(BookableUnit.id, BookableUnit.name).where(BookableUnit.id.in_(unit_ids)))
+    user_rows = await db.execute(select(User.id, User.full_name, User.email).where(User.id.in_(user_ids)))
+    room_names = {rid: name for rid, name in room_rows.all()}
+    unit_names = {uid: name for uid, name in unit_rows.all()}
+    users = {uid: (name, email) for uid, name, email in user_rows.all()}
+
+    out: list[PendingBookingOut] = []
+    for booking in rows:
+        user_name, user_email = users.get(booking.user_id, ("Unknown", ""))
+        out.append(
+            PendingBookingOut(
+                **BookingOut.model_validate(booking).model_dump(),
+                room_name=room_names.get(booking.room_id, f"Room #{booking.room_id}"),
+                unit_name=unit_names.get(booking.unit_id, f"Unit #{booking.unit_id}"),
+                user_full_name=user_name,
+                user_email=user_email,
+            )
+        )
+    return out
 
 
 @router.post("/bookings/{booking_id}/approve", response_model=BookingOut)

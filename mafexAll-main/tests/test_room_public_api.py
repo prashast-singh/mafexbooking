@@ -516,7 +516,10 @@ async def test_create_unit_request_mode_and_booking_is_pending(
 
     pending = await client.get("/api/v1/admin/bookings/pending", headers=admin_headers)
     assert pending.status_code == 200
-    assert any(row["id"] == booking.json()["id"] for row in pending.json())
+    row = next(x for x in pending.json() if x["id"] == booking.json()["id"])
+    assert row["room_name"] == "Request Room"
+    assert row["unit_name"] == "Desk"
+    assert row["user_full_name"] == "Requester"
 
 
 def test_iter_window_slot_intervals_respects_bounds() -> None:

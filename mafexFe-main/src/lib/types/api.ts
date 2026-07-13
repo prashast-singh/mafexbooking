@@ -325,6 +325,13 @@ export type BookingOut = {
   created_at: string;
 };
 
+export type PendingBookingOut = BookingOut & {
+  room_name: string;
+  unit_name: string;
+  user_full_name: string;
+  user_email: string;
+};
+
 export type BookingOutWithRoom = BookingOut & {
   room_name: string;
   room_location: string | null;

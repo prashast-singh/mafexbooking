@@ -12,6 +12,7 @@ import type {
   BookableUnitOut,
   BookableUnitUpdateBody,
   BookingOut,
+  PendingBookingOut,
   BookingPolicyOut,
   BookingPolicyUpdateBody,
   BookingSeriesCancelBody,
@@ -188,7 +189,7 @@ export async function listPendingBookings(params?: { room_id?: number; skip?: nu
   if (params?.skip != null) sp.set("skip", String(Math.max(0, params.skip)));
   if (params?.limit != null) sp.set("limit", String(Math.max(1, params.limit)));
   const q = sp.toString();
-  return apiFetch<BookingOut[]>(`/admin/bookings/pending${q ? `?${q}` : ""}`);
+  return apiFetch<PendingBookingOut[]>(`/admin/bookings/pending${q ? `?${q}` : ""}`);
 }
 
 export async function approvePendingBooking(bookingId: number, body: BookingDecisionBody = {}) {

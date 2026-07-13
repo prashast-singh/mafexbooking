@@ -12,13 +12,13 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/hooks/use-auth";
 import { approvePendingBooking, denyPendingBooking, listPendingBookings } from "@/lib/api/admin";
 import { listMyManagedRooms } from "@/lib/api/users";
-import type { BookingOut, ManagedRoomBrief } from "@/lib/types/api";
+import type { ManagedRoomBrief, PendingBookingOut } from "@/lib/types/api";
 import { formatApiError } from "@/lib/utils/errors";
 
 export default function AdminBookingRequestsPage() {
   const { user } = useAuth();
   const isGlobalAdmin = user?.role === "admin";
-  const [rows, setRows] = useState<BookingOut[]>([]);
+  const [rows, setRows] = useState<PendingBookingOut[]>([]);
   const [managedRooms, setManagedRooms] = useState<ManagedRoomBrief[]>([]);
   const [loading, setLoading] = useState(true);
   const [roomId, setRoomId] = useState<string>("");
@@ -69,8 +69,6 @@ export default function AdminBookingRequestsPage() {
 
   if (loading) return <LoadingState />;
 
-  const roomNames = Object.fromEntries(managedRooms.map((r) => [r.id, r.name]));
-
   return (
     <div className="space-y-8 p-6">
       <PageHeader title="Booking requests" description="Approve or deny pending bookings." />
@@ -87,6 +85,7 @@ export default function AdminBookingRequestsPage() {
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}
+              placeholder="Filter by room id"
             />
           ) : (
             <select
@@ -117,6 +116,7 @@ export default function AdminBookingRequestsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Room</TableHead>
                 <TableHead>Unit</TableHead>
                 <TableHead>Date</TableHead>
@@ -129,8 +129,12 @@ export default function AdminBookingRequestsPage() {
               {rows.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-mono text-xs">{b.id}</TableCell>
-                  <TableCell>{roomNames[b.room_id] ?? b.room_id}</TableCell>
-                  <TableCell>{b.unit_id}</TableCell>
+                  <TableCell>
+                    <div className="text-sm">{b.user_full_name}</div>
+                    <div className="text-xs text-muted-foreground">{b.user_email}</div>
+                  </TableCell>
+                  <TableCell>{b.room_name}</TableCell>
+                  <TableCell>{b.unit_name}</TableCell>
                   <TableCell>{b.booking_date}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     {b.start_time.slice(0, 5)} – {b.end_time.slice(0, 5)}
