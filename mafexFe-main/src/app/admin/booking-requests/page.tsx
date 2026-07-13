@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,47 +11,71 @@ import { PurposeText } from "@/components/shared/PurposeText";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useAuth } from "@/hooks/use-auth";
 import { approvePendingBooking, denyPendingBooking, listPendingBookings } from "@/lib/api/admin";
+import { listRooms } from "@/lib/api/rooms";
 import { listMyManagedRooms } from "@/lib/api/users";
-import type { ManagedRoomBrief, PendingBookingOut } from "@/lib/types/api";
+import type { ManagedRoomBrief, PendingBookingOut, RoomBrowseItem } from "@/lib/types/api";
 import { formatApiError } from "@/lib/utils/errors";
+
+const selectClass =
+  "flex h-9 min-w-[180px] rounded-md border border-input bg-transparent px-3 py-1 text-sm";
 
 export default function AdminBookingRequestsPage() {
   const { user } = useAuth();
   const isGlobalAdmin = user?.role === "admin";
   const [rows, setRows] = useState<PendingBookingOut[]>([]);
   const [managedRooms, setManagedRooms] = useState<ManagedRoomBrief[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [roomId, setRoomId] = useState<string>("");
+  const [allRooms, setAllRooms] = useState<RoomBrowseItem[]>([]);
+  const [roomId, setRoomId] = useState("");
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const hasLoadedOnce = useRef(false);
 
   useEffect(() => {
-    if (!user || isGlobalAdmin) return;
+    if (!user) return;
+    if (isGlobalAdmin) {
+      void listRooms({ limit: 100 })
+        .then((page) => setAllRooms(page.items))
+        .catch(() => setAllRooms([]));
+      return;
+    }
     void listMyManagedRooms()
       .then(setManagedRooms)
       .catch(() => setManagedRooms([]));
   }, [user, isGlobalAdmin]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const rid = roomId.trim() ? Number.parseInt(roomId, 10) : undefined;
-      setRows(await listPendingBookings({ room_id: Number.isFinite(rid) ? rid : undefined, limit: 200 }));
-    } catch (e) {
-      toast.error(formatApiError(e));
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [roomId]);
+  const load = useCallback(
+    async (selectedRoomId: string, isRefresh: boolean) => {
+      if (isRefresh) setRefreshing(true);
+      else setInitialLoading(true);
+      try {
+        const rid = selectedRoomId.trim() ? Number.parseInt(selectedRoomId, 10) : undefined;
+        setRows(
+          await listPendingBookings({
+            room_id: Number.isFinite(rid) ? rid : undefined,
+            limit: 200,
+          }),
+        );
+      } catch (e) {
+        toast.error(formatApiError(e));
+        setRows([]);
+      } finally {
+        setInitialLoading(false);
+        setRefreshing(false);
+        hasLoadedOnce.current = true;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load(roomId, hasLoadedOnce.current);
+  }, [roomId, load]);
 
   async function approve(id: number) {
     try {
       await approvePendingBooking(id);
       toast.success("Booking approved.");
-      void load();
+      void load(roomId, true);
     } catch (e) {
       toast.error(formatApiError(e));
     }
@@ -61,13 +85,15 @@ export default function AdminBookingRequestsPage() {
     try {
       await denyPendingBooking(id);
       toast.success("Booking denied.");
-      void load();
+      void load(roomId, true);
     } catch (e) {
       toast.error(formatApiError(e));
     }
   }
 
-  if (loading) return <LoadingState />;
+  if (initialLoading && !hasLoadedOnce.current) return <LoadingState />;
+
+  const roomOptions = isGlobalAdmin ? allRooms : managedRooms;
 
   return (
     <div className="space-y-8 p-6">
@@ -77,36 +103,26 @@ export default function AdminBookingRequestsPage() {
           <label className="text-sm font-medium" htmlFor="room-id">
             Room
           </label>
-          {isGlobalAdmin ? (
-            <input
-              id="room-id"
-              type="number"
-              min={1}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              placeholder="Filter by room id"
-            />
-          ) : (
-            <select
-              id="room-id"
-              className="flex h-9 min-w-[180px] rounded-md border border-input bg-transparent px-3 py-1 text-sm"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-            >
-              <option value="">All my rooms</option>
-              {managedRooms.map((room) => (
-                <option key={room.id} value={String(room.id)}>
-                  {room.name}
-                </option>
-              ))}
-            </select>
-          )}
+          <select
+            id="room-id"
+            className={selectClass}
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+          >
+            <option value="">{isGlobalAdmin ? "All rooms" : "All my rooms"}</option>
+            {roomOptions.map((room) => (
+              <option key={room.id} value={String(room.id)}>
+                {room.name}
+              </option>
+            ))}
+          </select>
         </div>
-        <Button variant="outline" onClick={() => void load()}>
+        <Button variant="outline" onClick={() => void load(roomId, true)} disabled={refreshing}>
           Refresh
         </Button>
       </div>
+
+      {refreshing && <p className="text-sm text-muted-foreground">Updating requests…</p>}
 
       {rows.length === 0 ? (
         <EmptyState title="No pending bookings" description="Requests will appear here." />
