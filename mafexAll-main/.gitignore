@@ -1,0 +1,11 @@
+# Uploaded room images (local dev)
+storage/
+
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.pytest_cache/
+*.egg-info/
+dist/
+build/

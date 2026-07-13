@@ -1,0 +1,36 @@
+# Local / build artifacts
+mafex-deploy.tar.gz
+*.tar.gz
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Python (backend)
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/*.egg-info/
+**/dist/
+**/build/
+
+# Secrets & local env (never commit)
+**/.env
+**/.env.local
+!**/.env.example
+!**/.env.production.example
+
+# Node (frontend)
+**/node_modules/
+**/.next/
+**/out/
+**/coverage/
+**/.vercel/
+**/*.tsbuildinfo
+
+# Uploaded files (dev)
+mafexAll-main/storage/

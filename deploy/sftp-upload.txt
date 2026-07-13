@@ -1,0 +1,1 @@
+put c:/Users/Singhpr4_u/Downloads/BookingSystem/mafex-deploy.tar.gz /tmp/mafex-deploy.tar.gz
