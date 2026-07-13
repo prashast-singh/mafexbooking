@@ -213,6 +213,7 @@ export async function listAdminBookings(params?: {
   status?: string;
   user_q?: string;
   series_id?: number;
+  booking_kind?: "all" | "single" | "series";
   upcoming_only?: boolean;
   past_only?: boolean;
   skip?: number;
@@ -225,6 +226,7 @@ export async function listAdminBookings(params?: {
   if (params?.status) sp.set("status", params.status);
   if (params?.user_q) sp.set("user_q", params.user_q);
   if (params?.series_id) sp.set("series_id", String(params.series_id));
+  if (params?.booking_kind && params.booking_kind !== "all") sp.set("booking_kind", params.booking_kind);
   if (params?.upcoming_only) sp.set("upcoming_only", "true");
   if (params?.past_only) sp.set("past_only", "true");
   if (params?.skip != null) sp.set("skip", String(Math.max(0, params.skip)));

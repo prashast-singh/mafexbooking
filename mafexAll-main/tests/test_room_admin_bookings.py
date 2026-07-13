@@ -112,3 +112,86 @@ async def test_room_admin_lists_and_cancels_room_bookings(client: AsyncClient, a
     other_rid = other_room.json()["id"]
     forbidden = await client.get("/api/v1/admin/bookings", headers=room_admin_headers, params={"room_id": other_rid})
     assert forbidden.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_bookings_booking_kind_filter(client: AsyncClient, admin_headers: dict[str, str]) -> None:
+    from app.core.security import create_access_token
+
+    room = await client.post(
+        "/api/v1/admin/rooms",
+        json={"name": "Kind Filter Room", "booking_mode": "hybrid", "capacity": 4},
+        headers=admin_headers,
+    )
+    rid = room.json()["id"]
+    unit = await client.post(
+        f"/api/v1/admin/rooms/{rid}/bookable-units",
+        json={"name": "Desk", "type": "table", "capacity": 2, "booking_mode": "direct"},
+        headers=admin_headers,
+    )
+    uid = unit.json()["id"]
+
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            if (await db.execute(select(BookingPolicy).limit(1))).scalar_one_or_none() is None:
+                db.add(
+                    BookingPolicy(
+                        slot_minutes=30,
+                        max_booking_hours_per_day=8,
+                        max_advance_days=30,
+                        cancellation_cutoff_minutes=60,
+                    )
+                )
+            user = User(
+                email="kindfilter@example.com",
+                full_name="Kind Filter User",
+                role=UserRole.user.value,
+                user_type=UserType.internal.value,
+                email_verified=True,
+                approval_status=ApprovalStatus.approved.value,
+                is_active=True,
+            )
+            db.add(user)
+            await db.flush()
+            uid_user = user.id
+            await create_booking(
+                db,
+                user=user,
+                room_id=rid,
+                unit_id=uid,
+                booking_date=date.today(),
+                start_time=time(9, 0),
+                end_time=time(9, 30),
+                purpose=None,
+            )
+
+    user_headers = {"Authorization": f"Bearer {create_access_token(str(uid_user))}"}
+    series = await client.post(
+        "/api/v1/bookings/series",
+        json={
+            "room_id": rid,
+            "unit_id": uid,
+            "booking_date": date.today().isoformat(),
+            "start_time": "10:00",
+            "end_time": "10:30",
+            "frequency": "weekly",
+            "interval": 1,
+            "max_occurrences": 2,
+        },
+        headers=user_headers,
+    )
+    assert series.status_code == 201
+    series_id = series.json()["id"]
+
+    singles = await client.get("/api/v1/admin/bookings", headers=admin_headers, params={"booking_kind": "single"})
+    assert singles.status_code == 200
+    assert all(row["series_id"] is None for row in singles.json())
+
+    series_rows = await client.get(
+        "/api/v1/admin/bookings",
+        headers=admin_headers,
+        params={"booking_kind": "series", "series_id": series_id},
+    )
+    assert series_rows.status_code == 200
+    assert len(series_rows.json()) >= 1
+    assert all(row["series_id"] == series_id for row in series_rows.json())

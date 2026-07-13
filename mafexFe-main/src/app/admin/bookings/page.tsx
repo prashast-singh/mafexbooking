@@ -1,61 +1,93 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { PurposeText } from "@/components/shared/PurposeText";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { AdminBookingsTable, type CancelTarget } from "@/features/admin/AdminBookingsTable";
 import { useAuth } from "@/hooks/use-auth";
 import { adminCancelBooking, adminCancelBookingSeries, listAdminBookings } from "@/lib/api/admin";
+import { listRooms } from "@/lib/api/rooms";
 import { listMyManagedRooms } from "@/lib/api/users";
-import type { AdminBookingListItem, ManagedRoomBrief } from "@/lib/types/api";
+import type { AdminBookingListItem, ManagedRoomBrief, RoomBrowseItem } from "@/lib/types/api";
 import { formatApiError } from "@/lib/utils/errors";
 
-type CancelTarget =
-  | { type: "single"; bookingId: number }
-  | { type: "series"; seriesId: number; fromDate?: string };
+type BookingKind = "all" | "single" | "series";
+type BookingStatus = "" | "confirmed" | "pending" | "cancelled" | "denied";
+
+type AppliedFilters = {
+  dateFrom: string;
+  dateTo: string;
+  roomId: string;
+  status: BookingStatus;
+  bookingKind: BookingKind;
+  seriesId: string;
+  userQ: string;
+  view: "all" | "upcoming" | "past";
+};
+
+const defaultFilters: AppliedFilters = {
+  dateFrom: "",
+  dateTo: "",
+  roomId: "",
+  status: "",
+  bookingKind: "all",
+  seriesId: "",
+  userQ: "",
+  view: "all",
+};
+
+const selectClass =
+  "flex h-9 min-w-[140px] rounded-md border border-input bg-transparent px-3 py-1 text-sm";
 
 export default function AdminBookingsPage() {
   const { user } = useAuth();
   const isGlobalAdmin = user?.role === "admin";
   const [managedRooms, setManagedRooms] = useState<ManagedRoomBrief[]>([]);
+  const [allRooms, setAllRooms] = useState<RoomBrowseItem[]>([]);
   const [rows, setRows] = useState<AdminBookingListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [roomId, setRoomId] = useState("");
-  const [status, setStatus] = useState("");
-  const [userQ, setUserQ] = useState("");
-  const [view, setView] = useState<"all" | "upcoming" | "past">("all");
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [draft, setDraft] = useState<AppliedFilters>(defaultFilters);
+  const [applied, setApplied] = useState<AppliedFilters>(defaultFilters);
   const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
+  const hasLoadedOnce = useRef(false);
 
   useEffect(() => {
-    if (!user || isGlobalAdmin) return;
+    if (!user) return;
+    if (isGlobalAdmin) {
+      void listRooms({ limit: 100 })
+        .then((page) => setAllRooms(page.items))
+        .catch(() => setAllRooms([]));
+      return;
+    }
     void listMyManagedRooms()
       .then(setManagedRooms)
       .catch(() => setManagedRooms([]));
   }, [user, isGlobalAdmin]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const fetchBookings = useCallback(async (filters: AppliedFilters, isRefresh: boolean) => {
+    if (isRefresh) setRefreshing(true);
+    else setInitialLoading(true);
     try {
-      const rid = roomId.trim() ? Number.parseInt(roomId, 10) : undefined;
+      const rid = filters.roomId.trim() ? Number.parseInt(filters.roomId, 10) : undefined;
+      const sid = filters.seriesId.trim() ? Number.parseInt(filters.seriesId, 10) : undefined;
       setRows(
         await listAdminBookings({
-          date_from: dateFrom || undefined,
-          date_to: dateTo || undefined,
+          date_from: filters.dateFrom || undefined,
+          date_to: filters.dateTo || undefined,
           room_id: Number.isFinite(rid) ? rid : undefined,
-          status: status || undefined,
-          user_q: userQ.trim() || undefined,
-          upcoming_only: view === "upcoming",
-          past_only: view === "past",
+          status: filters.status || undefined,
+          booking_kind: filters.bookingKind,
+          series_id: Number.isFinite(sid) ? sid : undefined,
+          user_q: filters.userQ.trim() || undefined,
+          upcoming_only: filters.view === "upcoming",
+          past_only: filters.view === "past",
           limit: 200,
         }),
       );
@@ -63,13 +95,31 @@ export default function AdminBookingsPage() {
       toast.error(formatApiError(e));
       setRows([]);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setRefreshing(false);
+      hasLoadedOnce.current = true;
     }
-  }, [dateFrom, dateTo, roomId, status, userQ, view]);
+  }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void fetchBookings(applied, hasLoadedOnce.current);
+  }, [applied, fetchBookings]);
+
+  function applyFilters() {
+    setApplied({ ...draft });
+  }
+
+  function applyView(view: AppliedFilters["view"]) {
+    const next = { ...draft, view };
+    setDraft(next);
+    setApplied(next);
+  }
+
+  function onSelectChange<K extends keyof AppliedFilters>(key: K, value: AppliedFilters[K]) {
+    const next = { ...draft, [key]: value };
+    setDraft(next);
+    setApplied(next);
+  }
 
   async function confirmCancel() {
     if (!cancelTarget) return;
@@ -88,15 +138,17 @@ export default function AdminBookingsPage() {
         toast.success(`Cancelled ${out.cancelled_count} future booking(s).`);
       }
       setCancelTarget(null);
-      void load();
+      void fetchBookings(applied, true);
     } catch (e) {
       toast.error(formatApiError(e));
     }
   }
 
-  if (loading) return <LoadingState />;
+  if (initialLoading && !hasLoadedOnce.current) return <LoadingState />;
 
-  const roomNames = Object.fromEntries(managedRooms.map((r) => [r.id, r.name]));
+  const roomNames = Object.fromEntries(
+    (isGlobalAdmin ? allRooms.map((r) => [r.id, r.name]) : managedRooms.map((r) => [r.id, r.name])),
+  );
 
   return (
     <div className="space-y-8 p-6">
@@ -116,45 +168,86 @@ export default function AdminBookingsPage() {
           <label className="text-sm font-medium" htmlFor="date-from">
             From
           </label>
-          <Input id="date-from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <Input
+            id="date-from"
+            type="date"
+            value={draft.dateFrom}
+            onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))}
+          />
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="date-to">
             To
           </label>
-          <Input id="date-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <Input
+            id="date-to"
+            type="date"
+            value={draft.dateTo}
+            onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))}
+          />
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="room-id">
             Room
           </label>
-          {isGlobalAdmin ? (
-            <Input id="room-id" type="number" min={1} value={roomId} onChange={(e) => setRoomId(e.target.value)} />
-          ) : (
-            <select
-              id="room-id"
-              className="flex h-9 min-w-[180px] rounded-md border border-input bg-transparent px-3 py-1 text-sm"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-            >
-              <option value="">All my rooms</option>
-              {managedRooms.map((room) => (
-                <option key={room.id} value={String(room.id)}>
-                  {room.name}
-                </option>
-              ))}
-            </select>
-          )}
+          <select
+            id="room-id"
+            className={selectClass}
+            value={draft.roomId}
+            onChange={(e) => onSelectChange("roomId", e.target.value)}
+          >
+            <option value="">{isGlobalAdmin ? "All rooms" : "All my rooms"}</option>
+            {(isGlobalAdmin ? allRooms : managedRooms).map((room) => (
+              <option key={room.id} value={String(room.id)}>
+                {room.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="status">
             Status
           </label>
-          <Input
+          <select
             id="status"
-            placeholder="confirmed, pending…"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            className={selectClass}
+            value={draft.status}
+            onChange={(e) => onSelectChange("status", e.target.value as BookingStatus)}
+          >
+            <option value="">All statuses</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="denied">Denied</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium" htmlFor="booking-kind">
+            Booking type
+          </label>
+          <select
+            id="booking-kind"
+            className={selectClass}
+            value={draft.bookingKind}
+            onChange={(e) => onSelectChange("bookingKind", e.target.value as BookingKind)}
+          >
+            <option value="all">All types</option>
+            <option value="single">Single</option>
+            <option value="series">Series</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium" htmlFor="series-id">
+            Series #
+          </label>
+          <Input
+            id="series-id"
+            type="number"
+            min={1}
+            placeholder="e.g. 12"
+            value={draft.seriesId}
+            onChange={(e) => setDraft((d) => ({ ...d, seriesId: e.target.value }))}
+            disabled={draft.bookingKind === "single"}
           />
         </div>
         <div className="space-y-1">
@@ -164,93 +257,34 @@ export default function AdminBookingsPage() {
           <Input
             id="user-q"
             placeholder="email or name"
-            value={userQ}
-            onChange={(e) => setUserQ(e.target.value)}
+            value={draft.userQ}
+            onChange={(e) => setDraft((d) => ({ ...d, userQ: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") applyFilters();
+            }}
           />
         </div>
         <div className="flex gap-1">
           {(["all", "upcoming", "past"] as const).map((v) => (
-            <Button key={v} variant={view === v ? "secondary" : "outline"} size="sm" onClick={() => setView(v)}>
+            <Button key={v} variant={draft.view === v ? "secondary" : "outline"} size="sm" onClick={() => applyView(v)}>
               {v === "all" ? "All" : v === "upcoming" ? "Upcoming" : "Past"}
             </Button>
           ))}
         </div>
-        <Button variant="outline" onClick={() => void load()}>
+        <Button onClick={applyFilters} disabled={refreshing}>
+          Search
+        </Button>
+        <Button variant="outline" onClick={() => void fetchBookings(applied, true)} disabled={refreshing}>
           Refresh
         </Button>
       </div>
 
+      {refreshing && <p className="text-sm text-muted-foreground">Updating bookings…</p>}
+
       {rows.length === 0 ? (
         <EmptyState title="No bookings" description="Adjust filters or check back later." />
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Room</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Purpose</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Series</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((b) => (
-                <TableRow key={b.id}>
-                  <TableCell className="font-mono text-xs">{b.id}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">{b.user_full_name}</div>
-                    <div className="text-xs text-muted-foreground">{b.user_email}</div>
-                  </TableCell>
-                  <TableCell>{b.room_name || roomNames[b.room_id] || b.room_id}</TableCell>
-                  <TableCell>{b.unit_name}</TableCell>
-                  <TableCell>{b.booking_date}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {b.start_time.slice(0, 5)} – {b.end_time.slice(0, 5)}
-                  </TableCell>
-                  <TableCell className="max-w-[240px]">
-                    <PurposeText purpose={b.purpose} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge value={b.status} />
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {b.series_id ? `#${b.series_id}` : "—"}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    {(b.status === "confirmed" || b.status === "pending") && (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => setCancelTarget({ type: "single", bookingId: b.id })}>
-                          Cancel
-                        </Button>
-                        {b.series_id && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              setCancelTarget({
-                                type: "series",
-                                seriesId: b.series_id!,
-                                fromDate: b.booking_date,
-                              })
-                            }
-                          >
-                            Cancel from date
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <AdminBookingsTable rows={rows} roomNames={roomNames} onCancel={setCancelTarget} />
       )}
 
       <ConfirmDialog

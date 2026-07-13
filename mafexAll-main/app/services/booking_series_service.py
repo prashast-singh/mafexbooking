@@ -367,6 +367,7 @@ async def list_bookings_for_admin(
     status: str | None = None,
     user_q: str | None = None,
     series_id: int | None = None,
+    booking_kind: str | None = None,
     upcoming_only: bool = False,
     past_only: bool = False,
     skip: int = 0,
@@ -394,6 +395,10 @@ async def list_bookings_for_admin(
         stmt = stmt.where(Booking.status == status)
     if series_id is not None:
         stmt = stmt.where(Booking.series_id == series_id)
+    if booking_kind == "single":
+        stmt = stmt.where(Booking.series_id.is_(None))
+    elif booking_kind == "series":
+        stmt = stmt.where(Booking.series_id.is_not(None))
     if user_q:
         pattern = f"%{user_q.strip()}%"
         stmt = stmt.where(or_(User.email.ilike(pattern), User.full_name.ilike(pattern)))
