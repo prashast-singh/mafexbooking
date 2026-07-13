@@ -18,7 +18,7 @@ def _booking_details_lines(
     start_label = booking.start_time.strftime("%H:%M")
     end_label = booking.end_time.strftime("%H:%M")
     location_line = f"Location: {room.location}\n" if room.location else ""
-    purpose_line = f"Purpose: {booking.purpose}\n" if booking.purpose else ""
+    purpose_line = f"Purpose: {booking.purpose or 'Not specified'}\n"
     greeting = f"Hello {user.full_name},\n\n"
     core = (
         f"Room: {room.name}\n"

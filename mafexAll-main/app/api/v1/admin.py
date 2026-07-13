@@ -38,6 +38,8 @@ from app.schemas.booking_series import (
     AdminBookingSeriesDetailOut,
     BookingSeriesCancelBody,
     BookingSeriesCancelOut,
+    BookingSeriesRescheduleBody,
+    BookingSeriesRescheduleOut,
 )
 from app.schemas.tag import TagCreate, TagOut, TagUpdate, UserTagsUpdate
 from app.schemas.room import (
@@ -91,6 +93,7 @@ from app.services.booking_series_service import (
     get_admin_booking_detail,
     get_admin_booking_series_detail,
     list_bookings_for_admin,
+    reschedule_booking_series,
 )
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -315,6 +318,25 @@ async def admin_cancel_booking_series(
 ) -> BookingSeriesCancelOut:
     try:
         return await cancel_booking_series(db, actor=user, series_id=series_id, body=body, as_admin=True)
+    except BookingError as exc:
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.code, "message": exc.message}) from exc
+
+
+@router.patch("/bookings/series/{series_id}/reschedule", response_model=BookingSeriesRescheduleOut)
+async def admin_reschedule_booking_series(
+    series_id: int,
+    body: BookingSeriesRescheduleBody,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> BookingSeriesRescheduleOut:
+    try:
+        return await reschedule_booking_series(
+            db,
+            actor=user,
+            series_id=series_id,
+            body=body,
+            as_admin=True,
+        )
     except BookingError as exc:
         raise HTTPException(status_code=exc.status_code, detail={"code": exc.code, "message": exc.message}) from exc
 

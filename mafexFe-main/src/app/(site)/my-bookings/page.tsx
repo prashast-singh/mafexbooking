@@ -124,6 +124,7 @@ function MyBookingsContent() {
       endTime: b.end_time,
       purpose: b.purpose,
       mode: "user",
+      seriesId: b.series_id,
     });
   }
   const hasAny = items.length > 0;
@@ -149,13 +150,23 @@ function MyBookingsContent() {
             const meta = seriesById.get(seriesId);
             const upcoming = bookings.filter((b) => b.status === "confirmed" || b.status === "pending");
             const first = bookings[0];
+            const seriesUnit = meta?.unit_name ?? first?.unit_name;
+            const seriesRoom = meta?.room_name ?? first?.room_name;
+            const mixedUnits =
+              seriesUnit != null &&
+              bookings.some((b) => b.unit_name && b.unit_name !== seriesUnit);
+            const seriesStart = meta?.start_time?.slice(0, 5);
+            const seriesEnd = meta?.end_time?.slice(0, 5);
             return (
               <div key={seriesId} className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-medium">
-                      Recurring: {first?.room_name ?? `Room #${first?.room_id}`}
-                      {first?.unit_name ? ` · ${first.unit_name}` : ""}
+                      Recurring: {seriesRoom ?? `Room #${first?.room_id}`}
+                      {seriesUnit ? ` · ${seriesUnit}` : ""}
+                      {mixedUnits && (
+                        <span className="text-sm font-normal text-muted-foreground"> (some dates differ)</span>
+                      )}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {meta ? seriesLabel(meta) : "Series"} · {bookings.length} occurrence(s)
@@ -183,6 +194,7 @@ function MyBookingsContent() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
+                        <TableHead>Unit</TableHead>
                         <TableHead>Time</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -192,7 +204,22 @@ function MyBookingsContent() {
                       {bookings.map((b) => (
                         <TableRow key={b.id}>
                           <TableCell>{b.booking_date}</TableCell>
-                          <TableCell className="whitespace-nowrap">
+                          <TableCell
+                            className={
+                              seriesUnit && b.unit_name !== seriesUnit ? "font-medium text-foreground" : undefined
+                            }
+                          >
+                            {b.unit_name}
+                          </TableCell>
+                          <TableCell
+                            className={
+                              seriesStart &&
+                              seriesEnd &&
+                              (b.start_time.slice(0, 5) !== seriesStart || b.end_time.slice(0, 5) !== seriesEnd)
+                                ? "whitespace-nowrap font-medium text-foreground"
+                                : "whitespace-nowrap"
+                            }
+                          >
                             {b.start_time.slice(0, 5)} – {b.end_time.slice(0, 5)}
                           </TableCell>
                           <TableCell>

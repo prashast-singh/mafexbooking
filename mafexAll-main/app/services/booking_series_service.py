@@ -23,10 +23,18 @@ from app.schemas.booking_series import (
     BookingSeriesCreate,
     BookingSeriesOut,
     BookingSeriesPreviewOut,
+    BookingSeriesRescheduleBody,
+    BookingSeriesRescheduleOut,
     SeriesSkippedItem,
 )
 from app.services.booking_email_service import send_booking_confirmation_email
-from app.services.booking_service import BookingError, build_booking_for_slot, cancel_booking
+from app.services.booking_service import (
+    BookingError,
+    _assert_can_modify_booking,
+    apply_booking_slot_update,
+    build_booking_for_slot,
+    cancel_booking,
+)
 from app.services.booking_service import (
     approve_pending_booking,
     deny_pending_booking,
@@ -84,6 +92,53 @@ async def _assert_series_access(db: AsyncSession, *, actor: User, series: Bookin
     if await is_room_admin(db, room_id=series.room_id, user_id=actor.id):
         return
     raise BookingError("forbidden", "Not allowed", 403)
+
+
+async def _load_series_names(
+    db: AsyncSession, series_rows: list[BookingSeries]
+) -> tuple[dict[int, str], dict[int, str]]:
+    if not series_rows:
+        return {}, {}
+    room_ids = {s.room_id for s in series_rows}
+    unit_ids = {s.unit_id for s in series_rows}
+    room_rows = await db.execute(select(Room.id, Room.name).where(Room.id.in_(room_ids)))
+    unit_rows = await db.execute(select(BookableUnit.id, BookableUnit.name).where(BookableUnit.id.in_(unit_ids)))
+    return (
+        {rid: name for rid, name in room_rows.all()},
+        {uid: name for uid, name in unit_rows.all()},
+    )
+
+
+def _series_to_out(
+    series: BookingSeries,
+    *,
+    room_name: str,
+    unit_name: str,
+    bookings: list[Booking],
+    skipped: list[SeriesSkippedItem] | None = None,
+) -> BookingSeriesOut:
+    return BookingSeriesOut(
+        id=series.id,
+        user_id=series.user_id,
+        room_id=series.room_id,
+        room_name=room_name,
+        unit_id=series.unit_id,
+        unit_name=unit_name,
+        start_time=series.start_time,
+        end_time=series.end_time,
+        frequency=series.frequency,
+        interval=series.interval,
+        weekday=series.weekday,
+        series_start_date=series.series_start_date,
+        end_date=series.end_date,
+        max_occurrences=series.max_occurrences,
+        purpose=series.purpose,
+        created_at=series.created_at,
+        created_count=len(bookings),
+        skipped_count=len(skipped or []),
+        bookings=[BookingOut.model_validate(b) for b in bookings],
+        skipped=skipped or [],
+    )
 
 
 async def _evaluate_series_date(
@@ -214,24 +269,15 @@ async def create_booking_series(
         raise BookingError("no_bookings_created", "No dates could be booked for this series", 409)
 
     await db.refresh(series)
-    return BookingSeriesOut(
-        id=series.id,
-        user_id=series.user_id,
-        room_id=series.room_id,
-        unit_id=series.unit_id,
-        start_time=series.start_time,
-        end_time=series.end_time,
-        frequency=series.frequency,
-        interval=series.interval,
-        weekday=series.weekday,
-        series_start_date=series.series_start_date,
-        end_date=series.end_date,
-        max_occurrences=series.max_occurrences,
-        purpose=series.purpose,
-        created_at=series.created_at,
-        created_count=len(created),
-        skipped_count=len(skipped),
-        bookings=[BookingOut.model_validate(b) for b in created],
+    room = await db.get(Room, series.room_id)
+    unit = await db.get(BookableUnit, series.unit_id)
+    room_name = room.name if room is not None else f"Room #{series.room_id}"
+    unit_name = unit.name if unit is not None else f"Unit #{series.unit_id}"
+    return _series_to_out(
+        series,
+        room_name=room_name,
+        unit_name=unit_name,
+        bookings=created,
         skipped=skipped,
     )
 
@@ -279,6 +325,89 @@ async def cancel_booking_series(
     return BookingSeriesCancelOut(cancelled_count=len(cancelled_ids), cancelled_booking_ids=cancelled_ids)
 
 
+async def reschedule_booking_series(
+    db: AsyncSession,
+    *,
+    actor: User,
+    series_id: int,
+    body: BookingSeriesRescheduleBody,
+    as_admin: bool = False,
+) -> BookingSeriesRescheduleOut:
+    series = await db.get(BookingSeries, series_id)
+    if series is None:
+        raise BookingError("not_found", "Series not found", 404)
+    await _assert_series_access(db, actor=actor, series=series)
+
+    anchor = await db.get(Booking, body.anchor_booking_id)
+    if anchor is None or anchor.series_id != series_id:
+        raise BookingError("invalid_anchor", "Anchor booking not in this series", 400)
+
+    today = datetime.now(timezone.utc).date()
+    stmt = select(Booking).where(
+        Booking.series_id == series_id,
+        Booking.status.in_([BookingStatus.confirmed.value, BookingStatus.pending.value]),
+    )
+    if body.scope == "all_future":
+        stmt = stmt.where(Booking.booking_date >= today)
+    elif body.scope == "from_date":
+        stmt = stmt.where(Booking.booking_date >= anchor.booking_date)
+
+    r = await db.execute(stmt.order_by(Booking.booking_date.asc()))
+    targets = list(r.scalars().all())
+    if not targets:
+        raise BookingError("no_targets", "No bookings to reschedule in this scope", 400)
+
+    unit = await db.get(BookableUnit, body.unit_id)
+    if unit is None or not unit.is_active:
+        raise BookingError("unit_invalid", "Bookable unit not valid", 400)
+
+    updated_ids: list[int] = []
+    skipped = 0
+    new_purpose = body.purpose if body.purpose is not None else series.purpose
+
+    for booking in targets:
+        owner = await db.get(User, booking.user_id)
+        if owner is None:
+            skipped += 1
+            continue
+        try:
+            staff_edit, is_room_mgr = await _assert_can_modify_booking(
+                db, actor=actor, booking=booking, as_admin=as_admin
+            )
+            await apply_booking_slot_update(
+                db,
+                booking=booking,
+                owner=owner,
+                unit_id=body.unit_id,
+                booking_date=booking.booking_date,
+                start_time=body.start_time,
+                end_time=body.end_time,
+                purpose=new_purpose,
+                staff_edit=staff_edit,
+                is_room_mgr=is_room_mgr,
+            )
+            updated_ids.append(booking.id)
+        except BookingError:
+            skipped += 1
+            continue
+
+    if not updated_ids:
+        raise BookingError("no_updates", "No bookings could be rescheduled", 409)
+
+    series.unit_id = body.unit_id
+    series.room_id = unit.room_id
+    series.start_time = body.start_time
+    series.end_time = body.end_time
+    series.purpose = new_purpose
+    await db.flush()
+
+    return BookingSeriesRescheduleOut(
+        updated_count=len(updated_ids),
+        updated_booking_ids=updated_ids,
+        skipped_count=skipped,
+    )
+
+
 async def list_user_booking_series(db: AsyncSession, *, user_id: int) -> list[BookingSeriesOut]:
     r = await db.execute(
         select(BookingSeries)
@@ -300,26 +429,14 @@ async def list_user_booking_series(db: AsyncSession, *, user_id: int) -> list[Bo
         if booking.series_id is not None:
             bookings_by_series.setdefault(booking.series_id, []).append(booking)
 
+    room_names, unit_names = await _load_series_names(db, series_rows)
+
     return [
-        BookingSeriesOut(
-            id=series.id,
-            user_id=series.user_id,
-            room_id=series.room_id,
-            unit_id=series.unit_id,
-            start_time=series.start_time,
-            end_time=series.end_time,
-            frequency=series.frequency,
-            interval=series.interval,
-            weekday=series.weekday,
-            series_start_date=series.series_start_date,
-            end_date=series.end_date,
-            max_occurrences=series.max_occurrences,
-            purpose=series.purpose,
-            created_at=series.created_at,
-            created_count=len(bookings_by_series.get(series.id, [])),
-            skipped_count=0,
-            bookings=[BookingOut.model_validate(b) for b in bookings_by_series.get(series.id, [])],
-            skipped=[],
+        _series_to_out(
+            series,
+            room_name=room_names.get(series.room_id, f"Room #{series.room_id}"),
+            unit_name=unit_names.get(series.unit_id, f"Unit #{series.unit_id}"),
+            bookings=bookings_by_series.get(series.id, []),
         )
         for series in series_rows
     ]
@@ -472,25 +589,13 @@ async def get_admin_booking_series_detail(
         for booking, user, room, unit in r.all()
     ]
     booking_rows = await db.execute(select(Booking).where(Booking.series_id == series_id))
-    series_out = BookingSeriesOut(
-        id=series.id,
-        user_id=series.user_id,
-        room_id=series.room_id,
-        unit_id=series.unit_id,
-        start_time=series.start_time,
-        end_time=series.end_time,
-        frequency=series.frequency,
-        interval=series.interval,
-        weekday=series.weekday,
-        series_start_date=series.series_start_date,
-        end_date=series.end_date,
-        max_occurrences=series.max_occurrences,
-        purpose=series.purpose,
-        created_at=series.created_at,
-        created_count=len([b for b in bookings if b.status in ("confirmed", "pending")]),
-        skipped_count=0,
-        bookings=[BookingOut.model_validate(b) for b in booking_rows.scalars().all()],
-        skipped=[],
+    room = await db.get(Room, series.room_id)
+    unit = await db.get(BookableUnit, series.unit_id)
+    series_out = _series_to_out(
+        series,
+        room_name=room.name if room is not None else f"Room #{series.room_id}",
+        unit_name=unit.name if unit is not None else f"Unit #{series.unit_id}",
+        bookings=list(booking_rows.scalars().all()),
     )
     return AdminBookingSeriesDetailOut(series=series_out, bookings=bookings)
 

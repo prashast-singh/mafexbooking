@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,12 +14,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { adminUpdateBooking } from "@/lib/api/admin";
-import { updateBooking } from "@/lib/api/bookings";
+import { adminRescheduleBookingSeries, adminUpdateBooking } from "@/lib/api/admin";
+import { rescheduleBookingSeries, updateBooking } from "@/lib/api/bookings";
 import { getRoom } from "@/lib/api/rooms";
 import type { BookableUnitPublic } from "@/lib/types/api";
 import { formatApiError } from "@/lib/utils/errors";
 import { apiTimeToInput, inputTimeToApi } from "@/lib/utils/time-format";
+
+export type RescheduleScope = "this_occurrence" | "all_future" | "from_date";
 
 export type RescheduleTarget = {
   bookingId: number;
@@ -29,6 +32,7 @@ export type RescheduleTarget = {
   endTime: string;
   purpose: string | null;
   mode: "user" | "admin";
+  seriesId?: number | null;
 };
 
 type Props = {
@@ -47,6 +51,9 @@ export function RescheduleBookingDialog({ open, onOpenChange, target, onSaved }:
   const [endTime, setEndTime] = useState("10:00");
   const [unitId, setUnitId] = useState("");
   const [purpose, setPurpose] = useState("");
+  const [scope, setScope] = useState<RescheduleScope>("this_occurrence");
+
+  const inSeries = target?.seriesId != null;
 
   useEffect(() => {
     if (!open || !target) return;
@@ -55,6 +62,7 @@ export function RescheduleBookingDialog({ open, onOpenChange, target, onSaved }:
     setEndTime(apiTimeToInput(target.endTime, "10:00"));
     setUnitId(String(target.unitId));
     setPurpose(target.purpose ?? "");
+    setScope("this_occurrence");
     setLoadingUnits(true);
     void getRoom(target.roomId)
       .then((room) => setUnits(room.bookable_units.filter((u) => u.is_active)))
@@ -72,19 +80,37 @@ export function RescheduleBookingDialog({ open, onOpenChange, target, onSaved }:
     }
     setSaving(true);
     try {
-      const body = {
+      const timeBody = {
         unit_id: uid,
-        booking_date: bookingDate,
         start_time: inputTimeToApi(startTime),
         end_time: inputTimeToApi(endTime),
         purpose: purpose.trim() || null,
       };
-      if (target.mode === "admin") {
-        await adminUpdateBooking(target.bookingId, body);
+
+      if (inSeries && scope !== "this_occurrence" && target.seriesId != null) {
+        const bulkBody = {
+          anchor_booking_id: target.bookingId,
+          scope: scope === "all_future" ? ("all_future" as const) : ("from_date" as const),
+          ...timeBody,
+        };
+        if (target.mode === "admin") {
+          await adminRescheduleBookingSeries(target.seriesId, bulkBody);
+        } else {
+          await rescheduleBookingSeries(target.seriesId, bulkBody);
+        }
+        toast.success("Series bookings updated.");
       } else {
-        await updateBooking(target.bookingId, body);
+        const body = {
+          ...timeBody,
+          booking_date: bookingDate,
+        };
+        if (target.mode === "admin") {
+          await adminUpdateBooking(target.bookingId, body);
+        } else {
+          await updateBooking(target.bookingId, body);
+        }
+        toast.success("Booking updated.");
       }
-      toast.success("Booking updated.");
       onOpenChange(false);
       onSaved();
     } catch (err) {
@@ -101,16 +127,67 @@ export function RescheduleBookingDialog({ open, onOpenChange, target, onSaved }:
           <DialogTitle>Reschedule booking</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="rs-date">Date</Label>
-            <Input
-              id="rs-date"
-              type="date"
-              value={bookingDate}
-              onChange={(e) => setBookingDate(e.target.value)}
-              required
-            />
-          </div>
+          {inSeries && (
+            <div className="space-y-2">
+              <Label>Apply changes to</Label>
+              <div className="space-y-2 text-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="reschedule-scope"
+                    checked={scope === "this_occurrence"}
+                    onChange={() => setScope("this_occurrence")}
+                  />
+                  This occurrence only
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="reschedule-scope"
+                    checked={scope === "all_future"}
+                    onChange={() => setScope("all_future")}
+                  />
+                  All future in series
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="reschedule-scope"
+                    checked={scope === "from_date"}
+                    onChange={() => setScope("from_date")}
+                  />
+                  From this date onward
+                </label>
+              </div>
+              <Alert>
+                <AlertDescription className="text-xs">
+                  {scope === "this_occurrence"
+                    ? "Changing the date removes this occurrence from the series. Changing unit or time updates only this row."
+                    : "Each occurrence keeps its scheduled date. Time, unit, and purpose apply to the selected bookings."}
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          {(!inSeries || scope === "this_occurrence") && (
+            <div className="space-y-1">
+              <Label htmlFor="rs-date">Date</Label>
+              <Input
+                id="rs-date"
+                type="date"
+                value={bookingDate}
+                onChange={(e) => setBookingDate(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
+          {inSeries && scope !== "this_occurrence" && (
+            <p className="text-xs text-muted-foreground">
+              Scheduled dates are unchanged; only time, unit, and purpose are updated.
+            </p>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="rs-start">Start</Label>

@@ -35,9 +35,8 @@ def build_booking_ics(
         f"Room: {room.name}",
         f"Unit: {unit.name}",
         f"Booking ID: {booking.id}",
+        f"Purpose: {booking.purpose or 'Not specified'}",
     ]
-    if booking.purpose:
-        description_parts.append(f"Purpose: {booking.purpose}")
     description = _ics_escape("\n".join(description_parts))
     uid = f"mafex-booking-{booking.id}@room-booking"
     now = datetime.now(timezone.utc)

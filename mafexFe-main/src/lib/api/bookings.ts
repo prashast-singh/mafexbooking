@@ -8,6 +8,8 @@ import type {
   BookingSeriesCreateBody,
   BookingSeriesOut,
   BookingSeriesPreviewOut,
+  BookingSeriesRescheduleBody,
+  BookingSeriesRescheduleOut,
   BookingUpdateBody,
 } from "@/lib/types/api";
 
@@ -42,6 +44,17 @@ export async function cancelBookingSeries(seriesId: number, body: BookingSeriesC
   return apiFetch<BookingSeriesCancelOut>(`/bookings/series/${seriesId}/cancel`, {
     method: "PATCH",
     body: JSON.stringify(body),
+  });
+}
+
+export async function rescheduleBookingSeries(seriesId: number, body: BookingSeriesRescheduleBody) {
+  return apiFetch<BookingSeriesRescheduleOut>(`/bookings/series/${seriesId}/reschedule`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      ...body,
+      start_time: normalizeTime(body.start_time),
+      end_time: normalizeTime(body.end_time),
+    }),
   });
 }
 

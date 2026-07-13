@@ -300,6 +300,7 @@ export default function AdminBookingsPage() {
               endTime: b.end_time,
               purpose: b.purpose,
               mode: "admin",
+              seriesId: b.series_id,
             })
           }
         />

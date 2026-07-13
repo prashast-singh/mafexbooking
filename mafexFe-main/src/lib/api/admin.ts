@@ -20,6 +20,8 @@ import type {
   BookingPolicyUpdateBody,
   BookingSeriesCancelBody,
   BookingSeriesCancelOut,
+  BookingSeriesRescheduleBody,
+  BookingSeriesRescheduleOut,
   InternalDomainCreateBody,
   InternalDomainOut,
   RoomAdminOut,
@@ -334,6 +336,13 @@ export async function adminCancelBookingSeries(seriesId: number, body: BookingSe
   });
 }
 
+export async function adminRescheduleBookingSeries(seriesId: number, body: BookingSeriesRescheduleBody) {
+  return apiFetch<BookingSeriesRescheduleOut>(`/admin/bookings/series/${seriesId}/reschedule`, {
+    method: "PATCH",
+    body: JSON.stringify(normalizeBookingSeriesReschedule(body)),
+  });
+}
+
 export async function addUnitConflict(unitId: number, body: UnitConflictCreateBody) {
   return apiFetch<UnitConflictCreateResponse>(`/admin/bookable-units/${unitId}/conflicts`, {
     method: "POST",
@@ -376,6 +385,14 @@ export async function patchBookingPolicy(body: BookingPolicyUpdateBody) {
     method: "PATCH",
     body: JSON.stringify(body),
   });
+}
+
+function normalizeBookingSeriesReschedule(body: BookingSeriesRescheduleBody): BookingSeriesRescheduleBody {
+  return {
+    ...body,
+    start_time: normalizeTime(body.start_time),
+    end_time: normalizeTime(body.end_time),
+  };
 }
 
 function normalizeBookingUpdate(body: BookingUpdateBody): BookingUpdateBody {

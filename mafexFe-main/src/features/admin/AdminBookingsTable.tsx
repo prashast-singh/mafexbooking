@@ -117,6 +117,7 @@ export function AdminBookingsTable({ rows, roomNames, onCancel, onEdit }: Props)
             const summary = statusSummary(bookings);
             const singleStatus = bookings.every((b) => b.status === bookings[0]?.status);
             const cancellable = bookings.some((b) => canCancelBooking(b.status));
+            const mixedUnits = bookings.some((b) => b.unit_name !== head.unit_name);
 
             return (
               <Fragment key={`series-${seriesId}`}>
@@ -139,7 +140,12 @@ export function AdminBookingsTable({ rows, roomNames, onCancel, onEdit }: Props)
                     <div className="text-xs text-muted-foreground">{head.user_email}</div>
                   </TableCell>
                   <TableCell>{roomLabel(head, roomNames)}</TableCell>
-                  <TableCell>{head.unit_name}</TableCell>
+                  <TableCell>
+                    {head.unit_name}
+                    {mixedUnits && (
+                      <div className="text-xs text-muted-foreground">some dates differ</div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div>{dateRangeLabel(bookings)}</div>
                     <div className="text-xs text-muted-foreground">{bookings.length} booking(s)</div>
@@ -181,7 +187,9 @@ export function AdminBookingsTable({ rows, roomNames, onCancel, onEdit }: Props)
                       <TableCell className="text-xs text-muted-foreground" colSpan={2}>
                         Occurrence {b.occurrence_index ?? "—"}
                       </TableCell>
-                      <TableCell />
+                      <TableCell className={b.unit_name !== head.unit_name ? "font-medium" : undefined}>
+                        {b.unit_name}
+                      </TableCell>
                       <TableCell>{b.booking_date}</TableCell>
                       <TableCell className="whitespace-nowrap">
                         {b.start_time.slice(0, 5)} – {b.end_time.slice(0, 5)}

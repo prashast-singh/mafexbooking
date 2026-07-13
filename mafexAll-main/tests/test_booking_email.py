@@ -55,6 +55,64 @@ def test_build_booking_ics_contains_event_fields() -> None:
     assert "Purpose: Team meeting" in ics
 
 
+def test_build_booking_ics_includes_purpose_when_empty() -> None:
+    booking = _sample_booking()
+    booking.purpose = None
+    room = Room(name="Seminar Room A", booking_mode="hybrid", capacity=10, location="Building 12", is_active=True)
+    unit = BookableUnit(room_id=1, name="Full room", type="full_room", capacity=10, is_active=True)
+
+    ics = build_booking_ics(
+        booking=booking,
+        room=room,
+        unit=unit,
+        attendee_email="user@students.uni-marburg.de",
+    )
+
+    assert "Purpose: Not specified" in ics
+
+
+@pytest.mark.asyncio
+async def test_cancellation_email_includes_purpose_not_specified(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services import booking_email_service
+
+    captured: list[str] = []
+
+    async def capture_plain(to_email: str, subject: str, body: str) -> None:
+        captured.append(body)
+
+    monkeypatch.setattr(booking_email_service, "send_plain_email", capture_plain)
+
+    booking = _sample_booking()
+    booking.purpose = None
+    room = Room(name="Seminar Room A", booking_mode="hybrid", capacity=10, is_active=True)
+    unit = BookableUnit(room_id=1, name="Full room", type="full_room", capacity=10, is_active=True)
+    user = User(
+        email="user@uni-marburg.de",
+        full_name="User",
+        role="user",
+        user_type=UserType.internal.value,
+        email_verified=True,
+        approval_status=ApprovalStatus.approved.value,
+        is_active=True,
+    )
+
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            db.add(user)
+            db.add(room)
+            db.add(unit)
+            await db.flush()
+            booking.user_id = user.id
+            booking.room_id = room.id
+            booking.unit_id = unit.id
+            db.add(booking)
+            await db.flush()
+            await booking_email_service.send_booking_cancellation_email(db, booking=booking)
+
+    assert len(captured) == 1
+    assert "Purpose: Not specified" in captured[0]
+
+
 @pytest.mark.asyncio
 async def test_confirmed_booking_sends_confirmation_email(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_service

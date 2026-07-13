@@ -428,7 +428,9 @@ export type BookingSeriesOut = {
   id: number;
   user_id: number;
   room_id: number;
+  room_name: string;
   unit_id: number;
+  unit_name: string;
   start_time: string;
   end_time: string;
   frequency: string;
@@ -456,6 +458,23 @@ export type BookingSeriesCancelBody = {
 export type BookingSeriesCancelOut = {
   cancelled_count: number;
   cancelled_booking_ids: number[];
+};
+
+export type BookingSeriesRescheduleScope = "all_future" | "from_date";
+
+export type BookingSeriesRescheduleBody = {
+  anchor_booking_id: number;
+  scope: BookingSeriesRescheduleScope;
+  unit_id: number;
+  start_time: string;
+  end_time: string;
+  purpose?: string | null;
+};
+
+export type BookingSeriesRescheduleOut = {
+  updated_count: number;
+  updated_booking_ids: number[];
+  skipped_count: number;
 };
 
 export type AdminBookingListItem = {

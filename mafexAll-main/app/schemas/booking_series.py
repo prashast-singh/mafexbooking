@@ -42,7 +42,9 @@ class BookingSeriesOut(BaseModel):
     id: int
     user_id: int
     room_id: int
+    room_name: str
     unit_id: int
+    unit_name: str
     start_time: dt.time
     end_time: dt.time
     frequency: str
@@ -76,6 +78,21 @@ class BookingSeriesCancelBody(BaseModel):
 class BookingSeriesCancelOut(BaseModel):
     cancelled_count: int
     cancelled_booking_ids: list[int]
+
+
+class BookingSeriesRescheduleBody(BaseModel):
+    anchor_booking_id: int
+    scope: Literal["all_future", "from_date"]
+    unit_id: int
+    start_time: dt.time
+    end_time: dt.time
+    purpose: str | None = None
+
+
+class BookingSeriesRescheduleOut(BaseModel):
+    updated_count: int
+    updated_booking_ids: list[int]
+    skipped_count: int
 
 
 class AdminBookingListItem(BaseModel):

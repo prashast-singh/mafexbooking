@@ -240,22 +240,14 @@ async def cancel_booking(
     return booking
 
 
-async def update_booking(
+async def _assert_can_modify_booking(
     db: AsyncSession,
     *,
     actor: User,
-    booking_id: int,
-    unit_id: int | None = None,
-    booking_date: date | None = None,
-    start_time: time | None = None,
-    end_time: time | None = None,
-    purpose: str | None = None,
-    as_admin: bool = False,
-) -> Booking:
-    booking = await db.get(Booking, booking_id)
-    if booking is None:
-        raise BookingError("not_found", "Booking not found", 404)
-
+    booking: Booking,
+    as_admin: bool,
+) -> tuple[bool, bool]:
+    """Return (staff_edit, is_room_mgr) after permission and cutoff checks."""
     staff_edit = as_admin and await can_manage_room(db, actor=actor, room_id=booking.room_id)
     is_owner = booking.user_id == actor.id
     is_room_mgr = await is_room_admin(db, room_id=booking.room_id, user_id=actor.id)
@@ -277,32 +269,38 @@ async def update_booking(
     if now > cutoff and not staff_edit and not is_room_mgr:
         raise BookingError("too_late", "Modification cutoff has passed", 400)
 
-    owner = await db.get(User, booking.user_id)
-    if owner is None:
-        raise BookingError("not_found", "Booking owner not found", 404)
+    return staff_edit, is_room_mgr
 
-    new_unit_id = unit_id if unit_id is not None else booking.unit_id
-    new_date = booking_date if booking_date is not None else booking.booking_date
-    new_start = start_time if start_time is not None else booking.start_time
-    new_end = end_time if end_time is not None else booking.end_time
-    new_purpose = purpose if purpose is not None else booking.purpose
 
-    unit = await db.get(BookableUnit, new_unit_id)
+async def apply_booking_slot_update(
+    db: AsyncSession,
+    *,
+    booking: Booking,
+    owner: User,
+    unit_id: int,
+    booking_date: date,
+    start_time: time,
+    end_time: time,
+    purpose: str | None,
+    staff_edit: bool,
+    is_room_mgr: bool,
+    send_email: bool = True,
+) -> Booking:
+    unit = await db.get(BookableUnit, unit_id)
     if unit is None:
         raise BookingError("unit_invalid", "Bookable unit not valid", 400)
     new_room_id = unit.room_id
-
     was_confirmed = booking.status == BookingStatus.confirmed.value
 
     validated = await build_booking_for_slot(
         db,
         user=owner,
         room_id=new_room_id,
-        unit_id=new_unit_id,
-        booking_date=new_date,
-        start_time=new_start,
-        end_time=new_end,
-        purpose=new_purpose,
+        unit_id=unit_id,
+        booking_date=booking_date,
+        start_time=start_time,
+        end_time=end_time,
+        purpose=purpose,
         series_id=booking.series_id,
         occurrence_index=booking.occurrence_index,
         exclude_booking_id=booking.id,
@@ -327,11 +325,64 @@ async def update_booking(
     await db.flush()
     await db.refresh(booking)
 
-    if booking.status == BookingStatus.confirmed.value:
+    if send_email and booking.status == BookingStatus.confirmed.value:
         try:
             await send_booking_updated_email(db, booking=booking)
         except Exception:
             pass
+
+    return booking
+
+
+async def update_booking(
+    db: AsyncSession,
+    *,
+    actor: User,
+    booking_id: int,
+    unit_id: int | None = None,
+    booking_date: date | None = None,
+    start_time: time | None = None,
+    end_time: time | None = None,
+    purpose: str | None = None,
+    as_admin: bool = False,
+) -> Booking:
+    booking = await db.get(Booking, booking_id)
+    if booking is None:
+        raise BookingError("not_found", "Booking not found", 404)
+
+    staff_edit, is_room_mgr = await _assert_can_modify_booking(
+        db, actor=actor, booking=booking, as_admin=as_admin
+    )
+
+    owner = await db.get(User, booking.user_id)
+    if owner is None:
+        raise BookingError("not_found", "Booking owner not found", 404)
+
+    original_date = booking.booking_date
+    new_unit_id = unit_id if unit_id is not None else booking.unit_id
+    new_date = booking_date if booking_date is not None else booking.booking_date
+    new_start = start_time if start_time is not None else booking.start_time
+    new_end = end_time if end_time is not None else booking.end_time
+    new_purpose = purpose if purpose is not None else booking.purpose
+
+    await apply_booking_slot_update(
+        db,
+        booking=booking,
+        owner=owner,
+        unit_id=new_unit_id,
+        booking_date=new_date,
+        start_time=new_start,
+        end_time=new_end,
+        purpose=new_purpose,
+        staff_edit=staff_edit,
+        is_room_mgr=is_room_mgr,
+    )
+
+    if booking.series_id is not None and booking.booking_date != original_date:
+        booking.series_id = None
+        booking.occurrence_index = None
+        await db.flush()
+        await db.refresh(booking)
 
     return booking
 
