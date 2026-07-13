@@ -155,6 +155,7 @@ function MyBookingsContent() {
                   <div>
                     <p className="font-medium">
                       Recurring: {first?.room_name ?? `Room #${first?.room_id}`}
+                      {first?.unit_name ? ` · ${first.unit_name}` : ""}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {meta ? seriesLabel(meta) : "Series"} · {bookings.length} occurrence(s)
@@ -245,6 +246,7 @@ function MyBookingsContent() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Room</TableHead>
+                      <TableHead>Unit</TableHead>
                       <TableHead>Location</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Time</TableHead>
@@ -261,6 +263,7 @@ function MyBookingsContent() {
                             {b.room_name}
                           </Link>
                         </TableCell>
+                        <TableCell>{b.unit_name}</TableCell>
                         <TableCell className="max-w-[360px] truncate" title={b.room_location ?? ""}>
                           {b.room_location ?? "—"}
                         </TableCell>

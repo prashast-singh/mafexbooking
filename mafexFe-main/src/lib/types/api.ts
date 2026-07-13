@@ -386,6 +386,7 @@ export type BookingSeriesBatchOut = {
 export type BookingOutWithRoom = BookingOut & {
   room_name: string;
   room_location: string | null;
+  unit_name: string;
 };
 
 export type PaginatedBookings = {

@@ -67,7 +67,7 @@ async def my_bookings(
     stmt = (
         select(Booking)
         .where(Booking.user_id == user.id)
-        .options(selectinload(Booking.room))
+        .options(selectinload(Booking.room), selectinload(Booking.unit))
         .order_by(Booking.start_at.desc())
         .offset(skip)
         .limit(limit)
@@ -79,6 +79,7 @@ async def my_bookings(
                 **BookingOut.model_validate(b).model_dump(),
                 room_name=b.room.name if b.room is not None else f"Room #{b.room_id}",
                 room_location=b.room.location if b.room is not None else None,
+                unit_name=b.unit.name if b.unit is not None else f"Unit #{b.unit_id}",
             )
             for b in rows
         ],

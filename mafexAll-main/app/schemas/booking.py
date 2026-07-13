@@ -39,6 +39,7 @@ class BookingOut(BaseModel):
 class BookingOutWithRoom(BookingOut):
     room_name: str
     room_location: str | None = None
+    unit_name: str
 
 
 class BookingCancelBody(BaseModel):
