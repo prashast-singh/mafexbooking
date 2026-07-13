@@ -15,7 +15,7 @@ from app.schemas.room_frontend import (
     RoomImageBrief,
     TagBrief,
 )
-from app.services.tag_visibility_service import apply_tag_visibility, load_user_tag_ids
+from app.services.tag_visibility_service import apply_tag_visibility, user_tag_ids_for_visibility
 
 
 def sorted_room_images(room: Room) -> list[RoomImage]:
@@ -159,7 +159,7 @@ async def fetch_rooms_for_browse(
 ) -> list[Room]:
     user_tag_ids = None
     if user is not None:
-        user_tag_ids = await load_user_tag_ids(db, user.id)
+        user_tag_ids = await user_tag_ids_for_visibility(db, user)
     stmt = select_rooms_browse_base(
         capacity=capacity,
         amenity_ids=amenity_ids,

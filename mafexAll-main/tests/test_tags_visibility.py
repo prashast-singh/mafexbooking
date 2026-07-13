@@ -130,3 +130,93 @@ async def test_tag_visibility_rules(client: AsyncClient, admin_headers: dict[str
     assert "RoomA" in names2
     assert "RoomB" in names2
     assert "RoomPublic" in names2
+
+
+@pytest.mark.asyncio
+async def test_tagged_user_cannot_book_invisible_room(
+    client: AsyncClient, admin_headers: dict[str, str]
+) -> None:
+    from datetime import date, time, timedelta
+
+    from app.models.booking_policy import BookingPolicy
+    from app.db.session import AsyncSessionLocal
+
+    tag_a = await _create_tag(client, admin_headers, "BookTagA")
+    room_visible = await _create_room(client, admin_headers, "BookRoomVisible")
+    room_hidden = await _create_room(client, admin_headers, "BookRoomHidden")
+
+    await client.post(
+        f"/api/v1/admin/rooms/{room_visible}/tags",
+        json={"tag_id": tag_a},
+        headers=admin_headers,
+    )
+
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            db.add(
+                BookingPolicy(
+                    slot_minutes=30,
+                    max_booking_hours_per_day=8,
+                    max_advance_days=30,
+                    cancellation_cutoff_minutes=0,
+                )
+            )
+            u = User(
+                email="booktag@uni-marburg.de",
+                full_name="Book Tag User",
+                role=UserRole.user.value,
+                user_type=UserType.internal.value,
+                email_verified=True,
+                approval_status=ApprovalStatus.approved.value,
+                is_active=True,
+            )
+            db.add(u)
+            await db.flush()
+            uid = u.id
+
+    unit_visible = await client.post(
+        f"/api/v1/admin/rooms/{room_visible}/bookable-units",
+        json={"name": "Desk", "type": "table", "capacity": 2, "booking_mode": "direct"},
+        headers=admin_headers,
+    )
+    unit_hidden = await client.post(
+        f"/api/v1/admin/rooms/{room_hidden}/bookable-units",
+        json={"name": "Desk", "type": "table", "capacity": 2, "booking_mode": "direct"},
+        headers=admin_headers,
+    )
+    assert unit_visible.status_code == 201
+    assert unit_hidden.status_code == 201
+
+    await client.patch(
+        f"/api/v1/admin/users/{uid}/tags",
+        json={"tag_ids": [tag_a]},
+        headers=admin_headers,
+    )
+    headers = await _user_headers(uid)
+    booking_date = str(date.today() + timedelta(days=1))
+
+    blocked = await client.post(
+        "/api/v1/bookings",
+        json={
+            "room_id": room_hidden,
+            "unit_id": unit_hidden.json()["id"],
+            "booking_date": booking_date,
+            "start_time": "10:00:00",
+            "end_time": "11:00:00",
+        },
+        headers=headers,
+    )
+    assert blocked.status_code == 404
+
+    allowed = await client.post(
+        "/api/v1/bookings",
+        json={
+            "room_id": room_visible,
+            "unit_id": unit_visible.json()["id"],
+            "booking_date": booking_date,
+            "start_time": "10:00:00",
+            "end_time": "11:00:00",
+        },
+        headers=headers,
+    )
+    assert allowed.status_code == 201

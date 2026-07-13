@@ -14,7 +14,7 @@ from app.models.user import User
 from app.services.booking_service import _conflict_peer_unit_ids, _has_overlap
 from app.services.policy_service import get_booking_policy
 from app.services.room_browse_service import normalize_unit_type_filter, select_rooms_browse_base
-from app.services.tag_visibility_service import load_user_tag_ids
+from app.services.tag_visibility_service import user_tag_ids_for_visibility
 from app.utils.slots import combine_utc, iter_window_slot_intervals
 
 # Default daily window when room columns are unset (UTC wall clock, consistent with bookings)
@@ -263,7 +263,7 @@ async def search_availability_multi(
 
     user_tag_ids = None
     if user is not None:
-        user_tag_ids = await load_user_tag_ids(db, user.id)
+        user_tag_ids = await user_tag_ids_for_visibility(db, user)
 
     stmt = select_rooms_browse_base(
         capacity=capacity,

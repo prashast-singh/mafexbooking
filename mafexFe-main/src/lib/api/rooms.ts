@@ -38,11 +38,10 @@ export function buildRoomsQuery(params: RoomListParams): string {
 
 export async function listRooms(params: RoomListParams = {}) {
   return apiFetch<RoomBrowsePage>(`/rooms${buildRoomsQuery(params)}`, {
-    auth: false,
     cache: "no-store",
   });
 }
 
 export async function getRoom(roomId: number) {
-  return apiFetch<RoomDetailPublic>(`/rooms/${roomId}`, { auth: false });
+  return apiFetch<RoomDetailPublic>(`/rooms/${roomId}`);
 }

@@ -26,6 +26,7 @@ from app.services.booking_series_service import (
     preview_booking_series,
     reschedule_booking_series,
 )
+from app.services.tag_visibility_service import room_visible_to_user
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -36,6 +37,8 @@ async def preview_series(
     user: ApprovedUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> BookingSeriesPreviewOut:
+    if not await room_visible_to_user(db, room_id=body.room_id, user=user):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
     try:
         return await preview_booking_series(db, user=user, body=body)
     except BookingError as exc:
@@ -48,6 +51,8 @@ async def create_series(
     user: ApprovedUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> BookingSeriesOut:
+    if not await room_visible_to_user(db, room_id=body.room_id, user=user):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
     try:
         return await create_booking_series(db, user=user, body=body)
     except BookingError as exc:
@@ -92,6 +97,8 @@ async def create(
     user: ApprovedUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> BookingOut:
+    if not await room_visible_to_user(db, room_id=body.room_id, user=user):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
     try:
         b = await create_booking(
             db,
