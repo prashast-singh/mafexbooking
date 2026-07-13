@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AdminBookingsTable, type CancelTarget } from "@/features/admin/AdminBookingsTable";
+import { RescheduleBookingDialog, type RescheduleTarget } from "@/features/bookings/RescheduleBookingDialog";
 import { useAuth } from "@/hooks/use-auth";
 import { adminCancelBooking, adminCancelBookingSeries, listAdminBookings } from "@/lib/api/admin";
 import { listRooms } from "@/lib/api/rooms";
@@ -56,6 +57,7 @@ export default function AdminBookingsPage() {
   const [draft, setDraft] = useState<AppliedFilters>(defaultFilters);
   const [applied, setApplied] = useState<AppliedFilters>(defaultFilters);
   const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<RescheduleTarget | null>(null);
   const hasLoadedOnce = useRef(false);
 
   useEffect(() => {
@@ -284,8 +286,31 @@ export default function AdminBookingsPage() {
       {rows.length === 0 ? (
         <EmptyState title="No bookings" description="Adjust filters or check back later." />
       ) : (
-        <AdminBookingsTable rows={rows} roomNames={roomNames} onCancel={setCancelTarget} />
+        <AdminBookingsTable
+          rows={rows}
+          roomNames={roomNames}
+          onCancel={setCancelTarget}
+          onEdit={(b) =>
+            setRescheduleTarget({
+              bookingId: b.id,
+              roomId: b.room_id,
+              unitId: b.unit_id,
+              bookingDate: b.booking_date,
+              startTime: b.start_time,
+              endTime: b.end_time,
+              purpose: b.purpose,
+              mode: "admin",
+            })
+          }
+        />
       )}
+
+      <RescheduleBookingDialog
+        open={rescheduleTarget != null}
+        onOpenChange={(o) => !o && setRescheduleTarget(null)}
+        target={rescheduleTarget}
+        onSaved={() => void fetchBookings(applied, true)}
+      />
 
       <ConfirmDialog
         open={cancelTarget != null}

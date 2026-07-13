@@ -4,14 +4,18 @@ from sqlalchemy.orm import selectinload
 
 from app.models.amenity import RoomAmenity
 from app.models.room import Room, RoomImage
+from app.models.tag import RoomTag
 from app.models.unit import BookableUnit
+from app.models.user import User
 from app.schemas.room_frontend import (
     AmenityBrief,
     BookableUnitPublic,
     RoomBrowseItem,
     RoomDetailPublic,
     RoomImageBrief,
+    TagBrief,
 )
+from app.services.tag_visibility_service import apply_tag_visibility, load_user_tag_ids
 
 
 def sorted_room_images(room: Room) -> list[RoomImage]:
@@ -21,6 +25,11 @@ def sorted_room_images(room: Room) -> list[RoomImage]:
 def thumbnail_url_for_room(room: Room) -> str | None:
     imgs = sorted_room_images(room)
     return imgs[0].file_url if imgs else None
+
+
+def tag_briefs_for_room(room: Room) -> list[TagBrief]:
+    links = sorted(room.tag_links, key=lambda x: (x.tag.name.lower(), x.tag.id))
+    return [TagBrief(id=link.tag.id, name=link.tag.name) for link in links]
 
 
 def amenity_briefs_for_room(room: Room) -> list[AmenityBrief]:
@@ -49,6 +58,7 @@ def room_to_browse_item(room: Room) -> RoomBrowseItem:
         is_active=room.is_active,
         thumbnail_url=thumbnail_url_for_room(room),
         amenities=amenity_briefs_for_room(room),
+        tags=tag_briefs_for_room(room),
         images=image_briefs_for_room(room),
     )
 
@@ -67,6 +77,7 @@ def room_to_detail_public(room: Room) -> RoomDetailPublic:
         is_active=room.is_active,
         thumbnail_url=thumbnail_url_for_room(room),
         amenities=amenity_briefs_for_room(room),
+        tags=tag_briefs_for_room(room),
         images=image_briefs_for_room(room),
         bookable_units=[
             BookableUnitPublic(
@@ -99,6 +110,7 @@ def select_rooms_browse_base(
     capacity: int | None,
     amenity_ids: list[int] | None,
     unit_type: str | None,
+    user_tag_ids: list[int] | None = None,
 ):
     stmt = select(Room).where(Room.is_active.is_(True))
 
@@ -128,9 +140,12 @@ def select_rooms_browse_base(
             )
         )
 
+    stmt = apply_tag_visibility(stmt, user_tag_ids)
+
     return stmt.options(
         selectinload(Room.images),
         selectinload(Room.amenity_links).selectinload(RoomAmenity.amenity),
+        selectinload(Room.tag_links).selectinload(RoomTag.tag),
     ).order_by(Room.name.asc())
 
 
@@ -140,11 +155,16 @@ async def fetch_rooms_for_browse(
     capacity: int | None,
     amenity_ids: list[int] | None,
     unit_type: str | None,
+    user: User | None = None,
 ) -> list[Room]:
+    user_tag_ids = None
+    if user is not None:
+        user_tag_ids = await load_user_tag_ids(db, user.id)
     stmt = select_rooms_browse_base(
         capacity=capacity,
         amenity_ids=amenity_ids,
         unit_type=unit_type,
+        user_tag_ids=user_tag_ids,
     )
     r = await db.execute(stmt)
     return list(r.scalars().unique().all())

@@ -7,6 +7,7 @@ from app.models.user import User
 from app.services.email_service import send_otp_email
 from app.services.internal_domain_service import is_internal_email
 from app.services.otp_service import create_and_store_otp, verify_otp_code
+from app.services.user_admin_service import ensure_user_account_active
 from app.utils.email_norm import normalize_email
 
 
@@ -109,6 +110,9 @@ async def login_verify_otp(db: AsyncSession, *, email: str, otp: str) -> str:
         raise AuthError("invalid_otp", "Invalid or expired OTP", 400)
     result = await db.execute(select(User).where(User.email == email_n))
     user = result.scalar_one_or_none()
-    if user is None or not user.is_active:
+    if user is None:
+        raise AuthError("not_found", "User not found", 404)
+    user = await ensure_user_account_active(db, user)
+    if not user.is_active:
         raise AuthError("not_found", "User not found", 404)
     return create_access_token(str(user.id), {"role": user.role})

@@ -43,3 +43,11 @@ class BookingOutWithRoom(BookingOut):
 
 class BookingCancelBody(BaseModel):
     reason: str | None = Field(None, max_length=2000)
+
+
+class BookingUpdate(BaseModel):
+    unit_id: int | None = None
+    booking_date: dt.date | None = None
+    start_time: dt.time | None = None
+    end_time: dt.time | None = None
+    purpose: str | None = None

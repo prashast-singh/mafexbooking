@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ClipboardList,
   LayoutDashboard,
+  Tag,
   Tags,
   Users,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const globalAdminLinks = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/rooms", label: "Rooms", icon: Building2 },
   { href: "/admin/amenities", label: "Amenities", icon: Tags },
+  { href: "/admin/tags", label: "Tags", icon: Tag },
 ];
 
 const roomAdminLinks = [

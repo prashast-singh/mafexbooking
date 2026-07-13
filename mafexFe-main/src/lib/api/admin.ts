@@ -5,6 +5,7 @@ import type {
   AdminDashboardSummary,
   AdminRoleUpdateBody,
   AdminUserOut,
+  AdminUserStatusUpdateBody,
   AmenityCreateBody,
   AmenityOut,
   AmenityUpdateBody,
@@ -12,6 +13,8 @@ import type {
   BookableUnitOut,
   BookableUnitUpdateBody,
   BookingOut,
+  BookingSeriesBatchOut,
+  BookingUpdateBody,
   PendingBookingOut,
   BookingPolicyOut,
   BookingPolicyUpdateBody,
@@ -21,6 +24,11 @@ import type {
   InternalDomainOut,
   RoomAdminOut,
   RoomAmenityAttachBody,
+  RoomTagAttachBody,
+  TagCreateBody,
+  TagOut,
+  TagUpdateBody,
+  UserTagsUpdateBody,
   RoomCreateBody,
   RoomImageOut,
   RoomUpdateBody,
@@ -84,6 +92,17 @@ export async function patchUserRole(userId: number, role: AdminRoleUpdateBody["r
   });
 }
 
+export async function patchUserStatus(userId: number, body: AdminUserStatusUpdateBody) {
+  return apiFetch<AdminUserOut>(`/admin/users/${userId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAdminUser(userId: number) {
+  return apiFetch<void>(`/admin/users/${userId}`, { method: "DELETE" });
+}
+
 export async function listUserEmailHistory(userId: number) {
   return apiFetch<UserEmailHistoryOut[]>(`/admin/users/${userId}/email-history`);
 }
@@ -101,6 +120,47 @@ export async function updateAmenity(id: number, body: AmenityUpdateBody) {
 
 export async function deleteAmenity(id: number) {
   return apiFetch<void>(`/admin/amenities/${id}`, { method: "DELETE" });
+}
+
+export async function createTag(body: TagCreateBody) {
+  return apiFetch<TagOut>("/admin/tags", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function updateTag(id: number, body: TagUpdateBody) {
+  return apiFetch<TagOut>(`/admin/tags/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteTag(id: number) {
+  return apiFetch<void>(`/admin/tags/${id}`, { method: "DELETE" });
+}
+
+export async function patchUserTags(userId: number, tagIds: number[]) {
+  const body: UserTagsUpdateBody = { tag_ids: tagIds };
+  return apiFetch<AdminUserOut>(`/admin/users/${userId}/tags`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listRoomTags(roomId: number) {
+  return apiFetch<TagOut[]>(`/admin/rooms/${roomId}/tags`);
+}
+
+export async function attachRoomTag(roomId: number, tagId: number) {
+  const body: RoomTagAttachBody = { tag_id: tagId };
+  return apiFetch<TagOut[]>(`/admin/rooms/${roomId}/tags`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function detachRoomTag(roomId: number, tagId: number) {
+  return apiFetch<TagOut[]>(`/admin/rooms/${roomId}/tags/${tagId}`, {
+    method: "DELETE",
+  });
 }
 
 export async function createRoom(body: RoomCreateBody) {
@@ -206,6 +266,27 @@ export async function denyPendingBooking(bookingId: number, body: BookingDecisio
   });
 }
 
+export async function approveSeriesPending(seriesId: number, body: BookingDecisionBody = {}) {
+  return apiFetch<BookingSeriesBatchOut>(`/admin/bookings/series/${seriesId}/approve-pending`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function denySeriesPending(seriesId: number, body: BookingDecisionBody = {}) {
+  return apiFetch<BookingSeriesBatchOut>(`/admin/bookings/series/${seriesId}/deny-pending`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function adminUpdateBooking(bookingId: number, body: BookingUpdateBody) {
+  return apiFetch<BookingOut>(`/admin/bookings/${bookingId}`, {
+    method: "PATCH",
+    body: JSON.stringify(normalizeBookingUpdate(body)),
+  });
+}
+
 export async function listAdminBookings(params?: {
   date_from?: string;
   date_to?: string;
@@ -295,4 +376,16 @@ export async function patchBookingPolicy(body: BookingPolicyUpdateBody) {
     method: "PATCH",
     body: JSON.stringify(body),
   });
+}
+
+function normalizeBookingUpdate(body: BookingUpdateBody): BookingUpdateBody {
+  const out: BookingUpdateBody = { ...body };
+  if (out.start_time) out.start_time = normalizeTime(out.start_time);
+  if (out.end_time) out.end_time = normalizeTime(out.end_time);
+  return out;
+}
+
+function normalizeTime(t: string): string {
+  if (t.length === 5) return `${t}:00`;
+  return t;
 }

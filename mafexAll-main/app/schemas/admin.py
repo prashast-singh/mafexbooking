@@ -44,11 +44,18 @@ class AdminUserOut(BaseModel):
     email_verified: bool
     approval_status: str
     is_active: bool
+    deactivate_at: datetime | None = None
     created_at: datetime
     approved_at: datetime | None
     approved_by_id: int | None
+    tag_ids: list[int] = []
 
     model_config = {"from_attributes": True}
+
+
+class AdminUserStatusUpdate(BaseModel):
+    is_active: bool | None = None
+    deactivate_at: datetime | None = None
 
 
 class AdminRoleUpdate(BaseModel):

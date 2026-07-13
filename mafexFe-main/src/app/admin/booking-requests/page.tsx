@@ -4,13 +4,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { PurposeText } from "@/components/shared/PurposeText";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { AdminBookingRequestsTable } from "@/features/admin/AdminBookingRequestsTable";
 import { useAuth } from "@/hooks/use-auth";
-import { approvePendingBooking, denyPendingBooking, listPendingBookings } from "@/lib/api/admin";
+import {
+  approvePendingBooking,
+  approveSeriesPending,
+  denyPendingBooking,
+  denySeriesPending,
+  listPendingBookings,
+} from "@/lib/api/admin";
 import { listRooms } from "@/lib/api/rooms";
 import { listMyManagedRooms } from "@/lib/api/users";
 import type { ManagedRoomBrief, PendingBookingOut, RoomBrowseItem } from "@/lib/types/api";
@@ -18,6 +26,10 @@ import { formatApiError } from "@/lib/utils/errors";
 
 const selectClass =
   "flex h-9 min-w-[180px] rounded-md border border-input bg-transparent px-3 py-1 text-sm";
+
+type DenyAction =
+  | { type: "single"; bookingId: number }
+  | { type: "series"; seriesId: number };
 
 export default function AdminBookingRequestsPage() {
   const { user } = useAuth();
@@ -28,6 +40,8 @@ export default function AdminBookingRequestsPage() {
   const [roomId, setRoomId] = useState("");
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [denyAction, setDenyAction] = useState<DenyAction | null>(null);
+  const [denyReason, setDenyReason] = useState("");
   const hasLoadedOnce = useRef(false);
 
   useEffect(() => {
@@ -81,10 +95,29 @@ export default function AdminBookingRequestsPage() {
     }
   }
 
-  async function deny(id: number) {
+  async function confirmDeny() {
+    if (!denyAction) return;
+    const reason = denyReason.trim() || null;
     try {
-      await denyPendingBooking(id);
-      toast.success("Booking denied.");
+      if (denyAction.type === "single") {
+        await denyPendingBooking(denyAction.bookingId, { reason });
+        toast.success("Booking denied.");
+      } else {
+        const out = await denySeriesPending(denyAction.seriesId, { reason });
+        toast.success(`Denied ${out.processed_count} booking(s).`);
+      }
+      setDenyAction(null);
+      setDenyReason("");
+      void load(roomId, true);
+    } catch (e) {
+      toast.error(formatApiError(e));
+    }
+  }
+
+  async function approveSeries(seriesId: number) {
+    try {
+      const out = await approveSeriesPending(seriesId);
+      toast.success(`Approved ${out.processed_count} booking(s).`);
       void load(roomId, true);
     } catch (e) {
       toast.error(formatApiError(e));
@@ -127,51 +160,39 @@ export default function AdminBookingRequestsPage() {
       {rows.length === 0 ? (
         <EmptyState title="No pending bookings" description="Requests will appear here." />
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Room</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Purpose</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((b) => (
-                <TableRow key={b.id}>
-                  <TableCell className="font-mono text-xs">{b.id}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">{b.user_full_name}</div>
-                    <div className="text-xs text-muted-foreground">{b.user_email}</div>
-                  </TableCell>
-                  <TableCell>{b.room_name}</TableCell>
-                  <TableCell>{b.unit_name}</TableCell>
-                  <TableCell>{b.booking_date}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {b.start_time.slice(0, 5)} – {b.end_time.slice(0, 5)}
-                  </TableCell>
-                  <TableCell className="max-w-[280px]">
-                    <PurposeText purpose={b.purpose} />
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button size="sm" onClick={() => void approve(b.id)}>
-                      Approve
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => void deny(b.id)}>
-                      Deny
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <AdminBookingRequestsTable
+          rows={rows}
+          onApprove={(id) => void approve(id)}
+          onDeny={(id) => setDenyAction({ type: "single", bookingId: id })}
+          onApproveSeries={(seriesId) => void approveSeries(seriesId)}
+          onDenySeries={(seriesId) => setDenyAction({ type: "series", seriesId })}
+        />
       )}
+
+      <ConfirmDialog
+        open={denyAction != null}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDenyAction(null);
+            setDenyReason("");
+          }
+        }}
+        title={denyAction?.type === "series" ? "Deny all pending in series?" : "Deny booking?"}
+        description="Optionally provide a reason — it will be emailed to the user."
+        confirmLabel="Deny"
+        destructive
+        onConfirm={confirmDeny}
+      >
+        <div className="space-y-2 pt-2">
+          <Label htmlFor="deny-reason">Reason (optional)</Label>
+          <Input
+            id="deny-reason"
+            value={denyReason}
+            onChange={(e) => setDenyReason(e.target.value)}
+            placeholder="Not available on this date"
+          />
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }

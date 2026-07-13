@@ -11,6 +11,7 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.amenity import RoomAmenity
     from app.models.booking import Booking
+    from app.models.tag import RoomTag
     from app.models.unit import BookableUnit
 
 
@@ -37,6 +38,9 @@ class Room(Base):
         back_populates="room", cascade="all, delete-orphan"
     )
     amenity_links: Mapped[list["RoomAmenity"]] = relationship(
+        back_populates="room", cascade="all, delete-orphan"
+    )
+    tag_links: Mapped[list["RoomTag"]] = relationship(
         back_populates="room", cascade="all, delete-orphan"
     )
     bookable_units: Mapped[list["BookableUnit"]] = relationship(

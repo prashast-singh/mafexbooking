@@ -52,7 +52,7 @@ async def admin_headers() -> dict[str, str]:
     async with AsyncSessionLocal() as db:
         async with db.begin():
             u = User(
-                email="admin@test.local",
+                email="admin@uni-marburg.de",
                 full_name="Admin",
                 role=UserRole.admin.value,
                 user_type=UserType.internal.value,

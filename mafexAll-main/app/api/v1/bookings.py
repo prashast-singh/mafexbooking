@@ -9,7 +9,7 @@ from app.core.deps import ApprovedUser, CurrentUser
 from app.core.enums import UserRole
 from app.db.session import get_db
 from app.models.booking import Booking
-from app.schemas.booking import BookingCancelBody, BookingCreate, BookingOut
+from app.schemas.booking import BookingCancelBody, BookingCreate, BookingOut, BookingUpdate
 from app.schemas.booking_series import (
     BookingSeriesCancelBody,
     BookingSeriesCancelOut,
@@ -17,7 +17,7 @@ from app.schemas.booking_series import (
     BookingSeriesOut,
     BookingSeriesPreviewOut,
 )
-from app.services.booking_service import BookingError, cancel_booking, create_booking
+from app.services.booking_service import BookingError, cancel_booking, create_booking, update_booking
 from app.services.booking_series_service import (
     cancel_booking_series,
     create_booking_series,
@@ -99,6 +99,30 @@ async def get_booking(
     if b.user_id != user.id and user.role != UserRole.admin.value:
         raise HTTPException(status_code=403, detail="Forbidden")
     return BookingOut.model_validate(b)
+
+
+@router.patch("/{booking_id}", response_model=BookingOut)
+async def update(
+    booking_id: int,
+    body: BookingUpdate,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> BookingOut:
+    try:
+        b = await update_booking(
+            db,
+            actor=user,
+            booking_id=booking_id,
+            unit_id=body.unit_id,
+            booking_date=body.booking_date,
+            start_time=body.start_time,
+            end_time=body.end_time,
+            purpose=body.purpose,
+            as_admin=(user.role == UserRole.admin.value),
+        )
+        return BookingOut.model_validate(b)
+    except BookingError as exc:
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.code, "message": exc.message}) from exc
 
 
 @router.patch("/{booking_id}/cancel", response_model=BookingOut)

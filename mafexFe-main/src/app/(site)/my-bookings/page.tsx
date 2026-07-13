@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { PurposeText } from "@/components/shared/PurposeText";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { RescheduleBookingDialog, type RescheduleTarget } from "@/features/bookings/RescheduleBookingDialog";
 import { cancelBooking, cancelBookingSeries } from "@/lib/api/bookings";
 import { listMyBookingSeries, listMyBookings } from "@/lib/api/users";
 import type { BookingOutWithRoom, BookingSeriesOut } from "@/lib/types/api";
@@ -41,6 +42,7 @@ function MyBookingsContent() {
   const [series, setSeries] = useState<BookingSeriesOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelAction, setCancelAction] = useState<CancelAction | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<RescheduleTarget | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,6 +109,23 @@ function MyBookingsContent() {
   if (loading) return <LoadingState />;
 
   const canCancel = user?.approval_status === "approved";
+
+  function canModify(status: string) {
+    return canCancel && (status === "confirmed" || status === "pending");
+  }
+
+  function openReschedule(b: BookingOutWithRoom) {
+    setRescheduleTarget({
+      bookingId: b.id,
+      roomId: b.room_id,
+      unitId: b.unit_id,
+      bookingDate: b.booking_date,
+      startTime: b.start_time,
+      endTime: b.end_time,
+      purpose: b.purpose,
+      mode: "user",
+    });
+  }
   const hasAny = items.length > 0;
 
   return (
@@ -179,24 +198,31 @@ function MyBookingsContent() {
                             <StatusBadge value={b.status} />
                           </TableCell>
                           <TableCell className="text-right space-x-2">
-                            {b.status === "confirmed" && canCancel ? (
+                            {canModify(b.status) ? (
                               <>
-                                <Button variant="outline" size="sm" onClick={() => setCancelAction({ type: "single", bookingId: b.id })}>
-                                  Cancel
+                                <Button variant="outline" size="sm" onClick={() => openReschedule(b)}>
+                                  Reschedule
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    setCancelAction({
-                                      type: "series_from_date",
-                                      seriesId,
-                                      fromDate: b.booking_date,
-                                    })
-                                  }
-                                >
-                                  Cancel from here
-                                </Button>
+                                {b.status === "confirmed" && (
+                                  <>
+                                    <Button variant="outline" size="sm" onClick={() => setCancelAction({ type: "single", bookingId: b.id })}>
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        setCancelAction({
+                                          type: "series_from_date",
+                                          seriesId,
+                                          fromDate: b.booking_date,
+                                        })
+                                      }
+                                    >
+                                      Cancel from here
+                                    </Button>
+                                  </>
+                                )}
                               </>
                             ) : (
                               <span className="text-muted-foreground">—</span>
@@ -248,11 +274,18 @@ function MyBookingsContent() {
                         <TableCell>
                           <StatusBadge value={b.status} />
                         </TableCell>
-                        <TableCell className="text-right">
-                          {b.status === "confirmed" && canCancel ? (
-                            <Button variant="outline" size="sm" onClick={() => setCancelAction({ type: "single", bookingId: b.id })}>
-                              Cancel
-                            </Button>
+                        <TableCell className="text-right space-x-2">
+                          {canModify(b.status) ? (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => openReschedule(b)}>
+                                Reschedule
+                              </Button>
+                              {b.status === "confirmed" && (
+                                <Button variant="outline" size="sm" onClick={() => setCancelAction({ type: "single", bookingId: b.id })}>
+                                  Cancel
+                                </Button>
+                              )}
+                            </>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
@@ -266,6 +299,13 @@ function MyBookingsContent() {
           )}
         </div>
       )}
+
+      <RescheduleBookingDialog
+        open={rescheduleTarget != null}
+        onOpenChange={(o) => !o && setRescheduleTarget(null)}
+        target={rescheduleTarget}
+        onSaved={() => void load()}
+      />
 
       <ConfirmDialog
         open={cancelAction != null}

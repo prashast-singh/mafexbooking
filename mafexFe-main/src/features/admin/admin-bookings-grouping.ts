@@ -1,10 +1,19 @@
 import type { AdminBookingListItem } from "@/lib/types/api";
 
-export type AdminBookingRow =
-  | { kind: "single"; booking: AdminBookingListItem }
-  | { kind: "series"; seriesId: number; bookings: AdminBookingListItem[] };
+export type SeriesGroupable = {
+  series_id?: number | null;
+  booking_date: string;
+  start_time: string;
+  status: string;
+  series_frequency?: string | null;
+  series_interval?: number | null;
+};
 
-function sortByDateDesc(bookings: AdminBookingListItem[]) {
+export type GroupedBookingRow<T extends SeriesGroupable> =
+  | { kind: "single"; booking: T }
+  | { kind: "series"; seriesId: number; bookings: T[] };
+
+function sortByDateDesc<T extends SeriesGroupable>(bookings: T[]) {
   return [...bookings].sort((a, b) => {
     const byDate = b.booking_date.localeCompare(a.booking_date);
     if (byDate !== 0) return byDate;
@@ -12,9 +21,9 @@ function sortByDateDesc(bookings: AdminBookingListItem[]) {
   });
 }
 
-export function groupAdminBookings(rows: AdminBookingListItem[]): AdminBookingRow[] {
-  const standalone: AdminBookingListItem[] = [];
-  const seriesMap = new Map<number, AdminBookingListItem[]>();
+export function groupBookingsBySeries<T extends SeriesGroupable>(rows: T[]): GroupedBookingRow<T>[] {
+  const standalone: T[] = [];
+  const seriesMap = new Map<number, T[]>();
 
   for (const booking of rows) {
     if (booking.series_id == null) {
@@ -26,7 +35,7 @@ export function groupAdminBookings(rows: AdminBookingListItem[]): AdminBookingRo
     seriesMap.set(booking.series_id, list);
   }
 
-  const result: AdminBookingRow[] = standalone.map((booking) => ({ kind: "single", booking }));
+  const result: GroupedBookingRow<T>[] = standalone.map((booking) => ({ kind: "single", booking }));
   for (const [seriesId, bookings] of seriesMap.entries()) {
     result.push({ kind: "series", seriesId, bookings: sortByDateDesc(bookings) });
   }
@@ -38,7 +47,13 @@ export function groupAdminBookings(rows: AdminBookingListItem[]): AdminBookingRo
   });
 }
 
-export function seriesFrequencyLabel(booking: AdminBookingListItem): string | null {
+export type AdminBookingRow = GroupedBookingRow<AdminBookingListItem>;
+
+export function groupAdminBookings(rows: AdminBookingListItem[]): AdminBookingRow[] {
+  return groupBookingsBySeries(rows);
+}
+
+export function seriesFrequencyLabel(booking: SeriesGroupable): string | null {
   if (!booking.series_frequency) return null;
   if (booking.series_frequency === "monthly") {
     const interval = booking.series_interval ?? 1;
@@ -48,7 +63,7 @@ export function seriesFrequencyLabel(booking: AdminBookingListItem): string | nu
   return interval === 1 ? "Weekly" : `Every ${interval} weeks`;
 }
 
-export function statusSummary(bookings: AdminBookingListItem[]): string {
+export function statusSummary(bookings: SeriesGroupable[]): string {
   const counts = new Map<string, number>();
   for (const b of bookings) {
     counts.set(b.status, (counts.get(b.status) ?? 0) + 1);
@@ -61,7 +76,7 @@ export function statusSummary(bookings: AdminBookingListItem[]): string {
     .join(", ");
 }
 
-export function dateRangeLabel(bookings: AdminBookingListItem[]): string {
+export function dateRangeLabel(bookings: SeriesGroupable[]): string {
   const sorted = sortByDateDesc(bookings);
   const first = sorted[sorted.length - 1]?.booking_date;
   const last = sorted[0]?.booking_date;

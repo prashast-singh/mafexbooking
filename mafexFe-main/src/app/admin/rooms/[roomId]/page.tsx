@@ -21,6 +21,8 @@ import {
   deleteRoomImage,
   detachRoomAmenity,
   attachRoomAmenity,
+  attachRoomTag,
+  detachRoomTag,
   listAdminUsers,
   listRoomAdmins,
   updateBookableUnit,
@@ -29,10 +31,12 @@ import {
   type RoomAdminMappingOut,
 } from "@/lib/api/admin";
 import { listAmenities } from "@/lib/api/amenities";
+import { listTags } from "@/lib/api/tags";
 import { getRoom } from "@/lib/api/rooms";
 import type {
   AdminUserOut,
   AmenityOut,
+  TagOut,
   BookableUnitPublic,
   BookableUnitType,
   BookingMode,
@@ -51,6 +55,7 @@ export default function AdminRoomDetailPage() {
 
   const [room, setRoom] = useState<RoomDetailPublic | null>(null);
   const [allAmenities, setAllAmenities] = useState<AmenityOut[]>([]);
+  const [allTags, setAllTags] = useState<TagOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteRoomOpen, setDeleteRoomOpen] = useState(false);
 
@@ -77,9 +82,15 @@ export default function AdminRoomDetailPage() {
     if (!Number.isFinite(roomId)) return;
     setLoading(true);
     try {
-      const [r, am, ra] = await Promise.all([getRoom(roomId), listAmenities(), listRoomAdmins(roomId)]);
+      const [r, am, tags, ra] = await Promise.all([
+        getRoom(roomId),
+        listAmenities(),
+        listTags(),
+        listRoomAdmins(roomId),
+      ]);
       setRoom(r);
       setAllAmenities(am);
+      setAllTags(tags);
       setRoomAdmins(ra);
       setName(r.name);
       setDescription(r.description ?? "");
@@ -151,6 +162,21 @@ export default function AdminRoomDetailPage() {
       } else {
         await detachRoomAmenity(roomId, id);
         toast.success("Amenity removed.");
+      }
+      void load();
+    } catch (e) {
+      toast.error(formatApiError(e));
+    }
+  }
+
+  async function toggleTag(id: number, checked: boolean) {
+    try {
+      if (checked) {
+        await attachRoomTag(roomId, id);
+        toast.success("Tag linked.");
+      } else {
+        await detachRoomTag(roomId, id);
+        toast.success("Tag removed.");
       }
       void load();
     } catch (e) {
@@ -361,6 +387,25 @@ export default function AdminRoomDetailPage() {
               </label>
             );
           })}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Tags">
+        <p className="mb-3 text-sm text-muted-foreground">
+          Tagged users only see rooms that share at least one of their tags. Untagged rooms are visible only to users
+          without tags.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          {allTags.map((t) => {
+            const on = (room.tags ?? []).some((x) => x.id === t.id);
+            return (
+              <label key={t.id} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={on} onChange={(e) => void toggleTag(t.id, e.target.checked)} />
+                {t.name}
+              </label>
+            );
+          })}
+          {allTags.length === 0 && <p className="text-sm text-muted-foreground">No tags defined yet.</p>}
         </div>
       </SectionCard>
 

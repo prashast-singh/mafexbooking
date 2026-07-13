@@ -1,4 +1,5 @@
 from app.models.amenity import Amenity, RoomAmenity
+from app.models.tag import RoomTag, Tag, UserTag
 from app.models.booking import Booking
 from app.models.booking_policy import BookingPolicy
 from app.models.booking_series import BookingSeries
@@ -11,6 +12,9 @@ from app.models.user import User
 from app.models.user_email_history import UserEmailHistory
 
 __all__ = [
+    "Tag",
+    "RoomTag",
+    "UserTag",
     "User",
     "OtpCode",
     "Amenity",

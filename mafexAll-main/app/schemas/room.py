@@ -3,6 +3,7 @@ from datetime import datetime, time
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.amenity import AmenityOut
+from app.schemas.tag import TagOut
 
 
 def _dedupe_int_ids(ids: list[int]) -> list[int]:
@@ -60,12 +61,17 @@ class RoomListOut(BaseModel):
 
 class RoomAdminOut(RoomListOut):
     amenities: list[AmenityOut]
+    tags: list[TagOut] = []
 
 
 class RoomDetailOut(RoomListOut):
     images: list[RoomImageOut]
     amenities: list[str]
     bookable_units: list[BookableUnitOut]
+
+
+class RoomTagAttach(BaseModel):
+    tag_id: int = Field(..., ge=1)
 
 
 class RoomAmenityAttach(BaseModel):
@@ -85,10 +91,18 @@ class RoomCreate(BaseModel):
     availability_window_start: time = time(8, 0)
     availability_window_end: time = time(20, 0)
     amenity_ids: list[int] | None = None
+    tag_ids: list[int] | None = None
 
     @field_validator("amenity_ids")
     @classmethod
     def dedupe_amenity_ids(cls, v: list[int] | None) -> list[int] | None:
+        if v is None:
+            return None
+        return _dedupe_int_ids(v)
+
+    @field_validator("tag_ids")
+    @classmethod
+    def dedupe_tag_ids(cls, v: list[int] | None) -> list[int] | None:
         if v is None:
             return None
         return _dedupe_int_ids(v)
@@ -114,10 +128,18 @@ class RoomUpdate(BaseModel):
     availability_window_start: time | None = None
     availability_window_end: time | None = None
     amenity_ids: list[int] | None = None
+    tag_ids: list[int] | None = None
 
     @field_validator("amenity_ids")
     @classmethod
     def dedupe_amenity_ids(cls, v: list[int] | None) -> list[int] | None:
+        if v is None:
+            return None
+        return _dedupe_int_ids(v)
+
+    @field_validator("tag_ids")
+    @classmethod
+    def dedupe_tag_ids_update(cls, v: list[int] | None) -> list[int] | None:
         if v is None:
             return None
         return _dedupe_int_ids(v)

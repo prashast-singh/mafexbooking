@@ -27,6 +27,10 @@ from app.schemas.booking_series import (
 )
 from app.services.booking_email_service import send_booking_confirmation_email
 from app.services.booking_service import BookingError, build_booking_for_slot, cancel_booking
+from app.services.booking_service import (
+    approve_pending_booking,
+    deny_pending_booking,
+)
 from app.services.policy_service import get_booking_policy
 from app.services.room_admin_service import can_manage_room, is_room_admin
 
@@ -489,3 +493,75 @@ async def get_admin_booking_series_detail(
         skipped=[],
     )
     return AdminBookingSeriesDetailOut(series=series_out, bookings=bookings)
+
+
+async def approve_pending_series(
+    db: AsyncSession,
+    *,
+    actor: User,
+    series_id: int,
+    reason: str | None,
+) -> tuple[int, list[int], int]:
+    series = await db.get(BookingSeries, series_id)
+    if series is None:
+        raise BookingError("not_found", "Series not found", 404)
+    if actor.role != "admin" and not await is_room_admin(db, room_id=series.room_id, user_id=actor.id):
+        raise BookingError("forbidden", "Not allowed", 403)
+
+    r = await db.execute(
+        select(Booking)
+        .where(
+            Booking.series_id == series_id,
+            Booking.status == BookingStatus.pending.value,
+        )
+        .order_by(Booking.booking_date.asc(), Booking.start_time.asc())
+    )
+    pending = list(r.scalars().all())
+    processed: list[int] = []
+    skipped = 0
+    for booking in pending:
+        try:
+            approved = await approve_pending_booking(
+                db,
+                actor=actor,
+                booking_id=booking.id,
+                reason=reason,
+            )
+            processed.append(approved.id)
+        except BookingError:
+            skipped += 1
+    return len(processed), processed, skipped
+
+
+async def deny_pending_series(
+    db: AsyncSession,
+    *,
+    actor: User,
+    series_id: int,
+    reason: str | None,
+) -> tuple[int, list[int], int]:
+    series = await db.get(BookingSeries, series_id)
+    if series is None:
+        raise BookingError("not_found", "Series not found", 404)
+    if actor.role != "admin" and not await is_room_admin(db, room_id=series.room_id, user_id=actor.id):
+        raise BookingError("forbidden", "Not allowed", 403)
+
+    r = await db.execute(
+        select(Booking)
+        .where(
+            Booking.series_id == series_id,
+            Booking.status == BookingStatus.pending.value,
+        )
+        .order_by(Booking.booking_date.asc(), Booking.start_time.asc())
+    )
+    pending = list(r.scalars().all())
+    processed: list[int] = []
+    for booking in pending:
+        denied = await deny_pending_booking(
+            db,
+            actor=actor,
+            booking_id=booking.id,
+            reason=reason,
+        )
+        processed.append(denied.id)
+    return len(processed), processed, 0

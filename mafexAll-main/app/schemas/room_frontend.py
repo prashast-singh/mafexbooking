@@ -9,6 +9,11 @@ class AmenityBrief(BaseModel):
     icon: str | None
 
 
+class TagBrief(BaseModel):
+    id: int
+    name: str
+
+
 class RoomImageBrief(BaseModel):
     id: int
     file_url: str
@@ -35,6 +40,7 @@ class RoomBrowseItem(BaseModel):
     is_active: bool
     thumbnail_url: str | None
     amenities: list[AmenityBrief]
+    tags: list[TagBrief] = []
     images: list[RoomImageBrief]
 
 
@@ -57,6 +63,7 @@ class RoomDetailPublic(BaseModel):
     is_active: bool
     thumbnail_url: str | None
     amenities: list[AmenityBrief]
+    tags: list[TagBrief] = []
     images: list[RoomImageBrief]
     bookable_units: list[BookableUnitPublic]
 

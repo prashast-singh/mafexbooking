@@ -19,6 +19,7 @@ type ConfirmDialogProps = {
   cancelLabel?: string;
   destructive?: boolean;
   onConfirm: () => void | Promise<void>;
+  children?: React.ReactNode;
 };
 
 export function ConfirmDialog({
@@ -30,6 +31,7 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   destructive,
   onConfirm,
+  children,
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,6 +40,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
+        {children}
         <DialogFooter className="sm:justify-end">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {cancelLabel}

@@ -96,6 +96,38 @@ export type AmenityUpdateBody = {
   icon?: string | null;
 };
 
+// --- Tags (`app/schemas/tag.py`) ---
+
+export type TagBrief = {
+  id: number;
+  name: string;
+};
+
+export type TagOut = {
+  id: number;
+  name: string;
+  description: string | null;
+  created_at: string;
+};
+
+export type TagCreateBody = {
+  name: string;
+  description?: string | null;
+};
+
+export type TagUpdateBody = {
+  name?: string | null;
+  description?: string | null;
+};
+
+export type UserTagsUpdateBody = {
+  tag_ids: number[];
+};
+
+export type RoomTagAttachBody = {
+  tag_id: number;
+};
+
 // --- Room browse / public (`app/schemas/room_frontend.py`) ---
 
 export type RoomImageBrief = {
@@ -124,6 +156,7 @@ export type RoomBrowseItem = {
   is_active: boolean;
   thumbnail_url: string | null;
   amenities: AmenityBrief[];
+  tags?: TagBrief[];
   images: RoomImageBrief[];
 };
 
@@ -146,6 +179,7 @@ export type RoomDetailPublic = {
   is_active: boolean;
   thumbnail_url: string | null;
   amenities: AmenityBrief[];
+  tags?: TagBrief[];
   images: RoomImageBrief[];
   bookable_units: BookableUnitPublic[];
 };
@@ -250,6 +284,7 @@ export type RoomAdminOut = {
   is_active: boolean;
   created_at: string;
   amenities: AmenityOut[];
+  tags?: TagOut[];
 };
 
 export type RoomImageOut = {
@@ -299,6 +334,14 @@ export type BookingCreateBody = {
   purpose?: string | null;
 };
 
+export type BookingUpdateBody = {
+  unit_id?: number | null;
+  booking_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  purpose?: string | null;
+};
+
 export type BookingCancelBody = {
   reason?: string | null;
 };
@@ -330,6 +373,14 @@ export type PendingBookingOut = BookingOut & {
   unit_name: string;
   user_full_name: string;
   user_email: string;
+  series_frequency?: string | null;
+  series_interval?: number | null;
+};
+
+export type BookingSeriesBatchOut = {
+  processed_count: number;
+  booking_ids: number[];
+  skipped_count: number;
 };
 
 export type BookingOutWithRoom = BookingOut & {
@@ -443,9 +494,16 @@ export type AdminUserOut = {
   email_verified: boolean;
   approval_status: string;
   is_active: boolean;
+  deactivate_at: string | null;
   created_at: string;
   approved_at: string | null;
   approved_by_id: number | null;
+  tag_ids?: number[];
+};
+
+export type AdminUserStatusUpdateBody = {
+  is_active?: boolean;
+  deactivate_at?: string | null;
 };
 
 export type AdminRoleUpdateBody = {

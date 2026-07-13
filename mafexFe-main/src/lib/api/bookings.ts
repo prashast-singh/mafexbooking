@@ -8,6 +8,7 @@ import type {
   BookingSeriesCreateBody,
   BookingSeriesOut,
   BookingSeriesPreviewOut,
+  BookingUpdateBody,
 } from "@/lib/types/api";
 
 export type { BookingCreateBody } from "@/lib/types/api";
@@ -53,6 +54,16 @@ export async function cancelBooking(id: number, reason?: string | null) {
   return apiFetch<BookingOut>(`/bookings/${id}/cancel`, {
     method: "PATCH",
     body: JSON.stringify(body),
+  });
+}
+
+export async function updateBooking(id: number, body: BookingUpdateBody) {
+  const payload: BookingUpdateBody = { ...body };
+  if (payload.start_time) payload.start_time = normalizeTime(payload.start_time);
+  if (payload.end_time) payload.end_time = normalizeTime(payload.end_time);
+  return apiFetch<BookingOut>(`/bookings/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
 }
 

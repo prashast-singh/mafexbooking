@@ -11,6 +11,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.booking import Booking
+    from app.models.tag import UserTag
     from app.models.user_email_history import UserEmailHistory
 
 
@@ -25,6 +26,7 @@ class User(Base):
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     approval_status: Mapped[str] = mapped_column(String(32), default=ApprovalStatus.pending.value)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    deactivate_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -46,4 +48,9 @@ class User(Base):
         "UserEmailHistory",
         back_populates="user",
         foreign_keys="UserEmailHistory.user_id",
+    )
+    tag_links: Mapped[list["UserTag"]] = relationship(
+        "UserTag",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )

@@ -10,9 +10,11 @@ from app.schemas.room_frontend import (
     SlotAvailabilityRow,
     SlotUnitAvailability,
 )
+from app.models.user import User
 from app.services.booking_service import _conflict_peer_unit_ids, _has_overlap
 from app.services.policy_service import get_booking_policy
 from app.services.room_browse_service import normalize_unit_type_filter, select_rooms_browse_base
+from app.services.tag_visibility_service import load_user_tag_ids
 from app.utils.slots import combine_utc, iter_window_slot_intervals
 
 # Default daily window when room columns are unset (UTC wall clock, consistent with bookings)
@@ -253,15 +255,21 @@ async def search_availability_multi(
     unit_type: str | None,
     slot_filter_start: time | None,
     slot_filter_end: time | None,
+    user: User | None = None,
 ) -> list[RoomAvailabilityGrid]:
     norm = normalize_unit_type_filter(unit_type)
     if norm == "__invalid__":
         return []
 
+    user_tag_ids = None
+    if user is not None:
+        user_tag_ids = await load_user_tag_ids(db, user.id)
+
     stmt = select_rooms_browse_base(
         capacity=capacity,
         amenity_ids=amenity_ids,
         unit_type=norm,
+        user_tag_ids=user_tag_ids,
     )
     r = await db.execute(stmt)
     rooms = list(r.scalars().unique().all())

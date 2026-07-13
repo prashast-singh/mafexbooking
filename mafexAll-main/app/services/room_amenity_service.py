@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from app.models.amenity import Amenity, RoomAmenity
 from app.models.room import Room
 from app.schemas.amenity import AmenityOut
+from app.services.room_tag_service import load_room_tag_rows, tags_to_out
 
 
 def dedupe_amenity_ids(amenity_ids: list[int]) -> list[int]:
@@ -101,6 +102,7 @@ async def room_admin_out(db: AsyncSession, room: Room):
     from app.schemas.room import RoomAdminOut
 
     amenities = await load_room_amenity_rows(db, room.id)
+    tags = await load_room_tag_rows(db, room.id)
     return RoomAdminOut(
         id=room.id,
         name=room.name,
@@ -113,4 +115,5 @@ async def room_admin_out(db: AsyncSession, room: Room):
         is_active=room.is_active,
         created_at=room.created_at,
         amenities=amenities_to_out(amenities),
+        tags=tags_to_out(tags),
     )

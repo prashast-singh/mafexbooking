@@ -6,9 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.deps import get_current_user_optional
 from app.db.session import get_db
 from app.models.amenity import RoomAmenity
 from app.models.room import Room
+from app.models.tag import RoomTag
+from app.models.user import User
 from app.schemas.room_frontend import RoomBrowsePage, RoomDetailPublic
 from app.services.availability_service import filter_rooms_with_available_slot
 from app.services.room_browse_service import (
@@ -17,6 +20,7 @@ from app.services.room_browse_service import (
     room_to_browse_item,
     room_to_detail_public,
 )
+from app.services.tag_visibility_service import room_visible_to_user
 from app.utils.query_params import parse_comma_separated_ints
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
@@ -25,6 +29,7 @@ router = APIRouter(prefix="/rooms", tags=["rooms"])
 @router.get("", response_model=RoomBrowsePage)
 async def list_rooms(
     db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User | None, Depends(get_current_user_optional)],
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     capacity: int | None = Query(None, ge=1),
@@ -53,6 +58,7 @@ async def list_rooms(
         capacity=capacity,
         amenity_ids=amenity_ids,
         unit_type=norm,
+        user=user,
     )
 
     has_time_range = (
@@ -86,17 +92,24 @@ async def list_rooms(
 
 
 @router.get("/{room_id}", response_model=RoomDetailPublic)
-async def get_room(room_id: int, db: Annotated[AsyncSession, Depends(get_db)]) -> RoomDetailPublic:
+async def get_room(
+    room_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User | None, Depends(get_current_user_optional)],
+) -> RoomDetailPublic:
     r = await db.execute(
         select(Room)
         .options(
             selectinload(Room.images),
             selectinload(Room.amenity_links).selectinload(RoomAmenity.amenity),
+            selectinload(Room.tag_links).selectinload(RoomTag.tag),
             selectinload(Room.bookable_units),
         )
         .where(Room.id == room_id, Room.is_active.is_(True))
     )
     room = r.scalar_one_or_none()
     if room is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    if not await room_visible_to_user(db, room_id=room_id, user=user):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
     return room_to_detail_public(room)
