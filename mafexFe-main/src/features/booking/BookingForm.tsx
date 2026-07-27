@@ -168,8 +168,7 @@ export function BookingForm({
   if (!canBook) {
     return (
       <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
-        Your account must be approved by an admin before you can book. You can still browse rooms and
-        check availability.
+        Your account must be approved by an admin before you can book.
       </div>
     );
   }

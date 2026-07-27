@@ -30,6 +30,20 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
+if [[ -n "$DOMAIN" ]]; then
+  # Ensure admin email deep links point at the public site origin.
+  if grep -q '^FRONTEND_BASE_URL=' .env; then
+    sed -i "s|^FRONTEND_BASE_URL=.*|FRONTEND_BASE_URL=${DOMAIN%/}|" .env
+  else
+    echo "FRONTEND_BASE_URL=${DOMAIN%/}" >> .env
+  fi
+  if grep -q '^CORS_ORIGINS=' .env; then
+    sed -i "s|^CORS_ORIGINS=.*|CORS_ORIGINS=${DOMAIN%/}|" .env
+  else
+    echo "CORS_ORIGINS=${DOMAIN%/}" >> .env
+  fi
+fi
+
 export PYTHONPATH="$BACKEND"
 alembic upgrade head
 python -m app.scripts.seed_bootstrap

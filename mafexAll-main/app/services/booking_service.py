@@ -12,6 +12,7 @@ from app.services.booking_email_service import (
     send_booking_cancellation_email,
     send_booking_confirmation_email,
     send_booking_denial_email,
+    send_booking_request_notification_to_room_admins,
     send_booking_updated_email,
 )
 from app.services.email_service import send_plain_email
@@ -29,11 +30,36 @@ class BookingError(Exception):
 
 
 async def _conflict_peer_unit_ids(db: AsyncSession, unit_id: int) -> set[int]:
+    unit = await db.get(BookableUnit, unit_id)
+    if unit is None:
+        return set()
+
     r1 = await db.execute(
         select(UnitConflict.conflict_with_unit_id).where(UnitConflict.unit_id == unit_id)
     )
     r2 = await db.execute(select(UnitConflict.unit_id).where(UnitConflict.conflict_with_unit_id == unit_id))
-    return set(r1.scalars().all()) | set(r2.scalars().all())
+    peers = set(r1.scalars().all()) | set(r2.scalars().all())
+
+    # full_room automatically conflicts with every other unit in the same room (bidirectional).
+    if unit.type == "full_room":
+        r = await db.execute(
+            select(BookableUnit.id).where(
+                BookableUnit.room_id == unit.room_id,
+                BookableUnit.id != unit_id,
+            )
+        )
+        peers |= set(r.scalars().all())
+    else:
+        r = await db.execute(
+            select(BookableUnit.id).where(
+                BookableUnit.room_id == unit.room_id,
+                BookableUnit.type == "full_room",
+                BookableUnit.id != unit_id,
+            )
+        )
+        peers |= set(r.scalars().all())
+
+    return peers
 
 
 async def _has_overlap(
@@ -194,6 +220,11 @@ async def create_booking(
     if booking.status == BookingStatus.confirmed.value:
         try:
             await send_booking_confirmation_email(db, booking=booking)
+        except Exception:
+            pass
+    elif booking.status == BookingStatus.pending.value:
+        try:
+            await send_booking_request_notification_to_room_admins(db, booking=booking)
         except Exception:
             pass
     return booking
@@ -418,6 +449,7 @@ async def approve_pending_booking(
     actor: User,
     booking_id: int,
     reason: str | None,
+    send_email: bool = True,
 ) -> Booking:
     booking = await db.get(Booking, booking_id)
     if booking is None:
@@ -473,10 +505,11 @@ async def approve_pending_booking(
             # Avoid breaking approval due to email issues.
             pass
 
-    try:
-        await send_booking_confirmation_email(db, booking=booking)
-    except Exception:
-        pass
+    if send_email:
+        try:
+            await send_booking_confirmation_email(db, booking=booking)
+        except Exception:
+            pass
 
     return booking
 

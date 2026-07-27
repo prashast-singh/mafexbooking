@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import ApprovalStatus, UserRole, UserType
@@ -21,6 +21,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     full_name: Mapped[str] = mapped_column(String(255))
+    signup_intent: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    accepted_house_rules_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     role: Mapped[str] = mapped_column(String(32), default=UserRole.user.value)
     user_type: Mapped[str] = mapped_column(String(32))
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)

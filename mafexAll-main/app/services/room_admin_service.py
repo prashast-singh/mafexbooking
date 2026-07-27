@@ -9,9 +9,22 @@ from app.schemas.user import ManagedRoomBrief, UserPublic
 
 
 async def user_public_out(db: AsyncSession, user: User) -> UserPublic:
+    from app.services.house_rules_service import (
+        get_or_create_house_rules,
+        user_must_accept_house_rules,
+    )
+
     managed_room_ids = await list_managed_room_ids(db, user_id=user.id)
+    rules = await get_or_create_house_rules(db)
     out = UserPublic.model_validate(user)
-    return out.model_copy(update={"managed_room_ids": managed_room_ids})
+    return out.model_copy(
+        update={
+            "managed_room_ids": managed_room_ids,
+            "accepted_house_rules_version": user.accepted_house_rules_version,
+            "house_rules_version": rules.version,
+            "must_accept_house_rules": user_must_accept_house_rules(user, rules),
+        }
+    )
 
 
 async def list_managed_room_ids(db: AsyncSession, *, user_id: int) -> list[int]:

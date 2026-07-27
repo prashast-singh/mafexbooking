@@ -8,17 +8,22 @@ import { getStoredToken } from "@/lib/api/client";
 import { useAuth } from "@/hooks/use-auth";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
     if (!getStoredToken()) {
       router.replace("/login");
+      return;
     }
-  }, [loading, router]);
+    if (user && user.approval_status !== "approved") {
+      router.replace("/awaiting-approval");
+    }
+  }, [loading, user, router]);
 
   if (loading) return <LoadingState />;
   if (!getStoredToken()) return null;
+  if (user && user.approval_status !== "approved") return null;
   return <>{children}</>;
 }

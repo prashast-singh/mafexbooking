@@ -3,6 +3,7 @@ import type {
   AdminBookingDetailOut,
   AdminBookingListItem,
   AdminDashboardSummary,
+  AdminPendingCounts,
   AdminRoleUpdateBody,
   AdminUserOut,
   AdminUserStatusUpdateBody,
@@ -18,6 +19,8 @@ import type {
   PendingBookingOut,
   BookingPolicyOut,
   BookingPolicyUpdateBody,
+  HouseRulesOut,
+  HouseRulesUpdateBody,
   BookingSeriesCancelBody,
   BookingSeriesCancelOut,
   BookingSeriesRescheduleBody,
@@ -53,6 +56,10 @@ export type RoomAdminMappingOut = {
 
 export async function dashboardSummary() {
   return apiFetch<AdminDashboardSummary>("/admin/dashboard/summary");
+}
+
+export async function getPendingCounts() {
+  return apiFetch<AdminPendingCounts>("/admin/pending-counts");
 }
 
 const ADMIN_LIST_MAX = 100;
@@ -382,6 +389,17 @@ export async function getBookingPolicy() {
 
 export async function patchBookingPolicy(body: BookingPolicyUpdateBody) {
   return apiFetch<BookingPolicyOut>("/admin/config/booking-policy", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getHouseRules() {
+  return apiFetch<HouseRulesOut>("/admin/config/house-rules");
+}
+
+export async function patchHouseRules(body: HouseRulesUpdateBody) {
+  return apiFetch<HouseRulesOut>("/admin/config/house-rules", {
     method: "PATCH",
     body: JSON.stringify(body),
   });

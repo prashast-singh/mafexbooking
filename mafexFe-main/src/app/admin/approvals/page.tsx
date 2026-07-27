@@ -66,6 +66,7 @@ export default function AdminApprovalsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead className="min-w-[220px]">How they found us / intended use</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -75,7 +76,10 @@ export default function AdminApprovalsPage() {
                   <TableCell className="font-medium">{u.full_name}</TableCell>
                   <TableCell>{u.email}</TableCell>
                   <TableCell className="capitalize">{u.user_type}</TableCell>
-                  <TableCell className="text-right space-x-2">
+                  <TableCell className="max-w-sm whitespace-pre-wrap text-sm text-muted-foreground">
+                    {u.signup_intent?.trim() || "—"}
+                  </TableCell>
+                  <TableCell className="space-x-2 text-right">
                     <Button size="sm" onClick={() => void approve(u.id)}>
                       Approve
                     </Button>

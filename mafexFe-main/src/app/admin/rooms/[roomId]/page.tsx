@@ -73,6 +73,11 @@ export default function AdminRoomDetailPage() {
   const [unitCap, setUnitCap] = useState(4);
   const [unitBookingMode, setUnitBookingMode] = useState<"direct" | "request">("direct");
 
+  const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState<BookableUnitType>("table");
+  const [editCap, setEditCap] = useState(1);
+
   const [roomAdmins, setRoomAdmins] = useState<RoomAdminMappingOut[]>([]);
   const [adminSearch, setAdminSearch] = useState("");
   const [adminSearchResults, setAdminSearchResults] = useState<AdminUserOut[]>([]);
@@ -261,6 +266,37 @@ export default function AdminRoomDetailPage() {
     try {
       await updateBookableUnit(u.id, { booking_mode });
       toast.success("Unit booking mode updated.");
+      void load();
+    } catch (e) {
+      toast.error(formatApiError(e));
+    }
+  }
+
+  function startEditUnit(u: BookableUnitPublic) {
+    setEditingUnitId(u.id);
+    setEditName(u.name);
+    setEditType(u.type as BookableUnitType);
+    setEditCap(u.capacity);
+  }
+
+  function cancelEditUnit() {
+    setEditingUnitId(null);
+    setEditName("");
+    setEditType("table");
+    setEditCap(1);
+  }
+
+  async function saveEditUnit(unitId: number) {
+    const trimmed = editName.trim();
+    if (!trimmed || editCap < 1) return;
+    try {
+      await updateBookableUnit(unitId, {
+        name: trimmed,
+        type: editType,
+        capacity: editCap,
+      });
+      toast.success("Unit updated.");
+      cancelEditUnit();
       void load();
     } catch (e) {
       toast.error(formatApiError(e));
@@ -482,28 +518,83 @@ export default function AdminRoomDetailPage() {
               key={u.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded border px-3 py-2 text-sm"
             >
-              <span>
-                {u.name}{" "}
-                <span className="text-muted-foreground">
-                  ({u.type}, {u.booking_mode === "request" ? "request approval" : "direct"}, cap {u.capacity})
-                </span>
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  className="flex h-8 rounded-md border border-input bg-transparent px-2 text-xs"
-                  value={u.booking_mode}
-                  onChange={(e) => void changeUnitBookingMode(u, e.target.value as "direct" | "request")}
-                >
-                  <option value="direct">Direct</option>
-                  <option value="request">Request</option>
-                </select>
-                <Button size="sm" variant="outline" onClick={() => void toggleUnit(u)}>
-                  {u.is_active ? "Deactivate" : "Activate"}
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => void removeUnit(u.id)}>
-                  Delete
-                </Button>
-              </div>
+              {editingUnitId === u.id ? (
+                <>
+                  <div className="grid flex-1 gap-2 sm:grid-cols-3">
+                    <div className="space-y-1">
+                      <Label>Name</Label>
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Table A"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Type</Label>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                        value={editType}
+                        onChange={(e) => setEditType(e.target.value as BookableUnitType)}
+                      >
+                        <option value="full_room">Full room</option>
+                        <option value="half_room">Half room</option>
+                        <option value="section">Section</option>
+                        <option value="table">Table</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Capacity</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={editCap}
+                        onChange={(e) => setEditCap(Number.parseInt(e.target.value, 10) || 1)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => void saveEditUnit(u.id)}
+                      disabled={!editName.trim() || editCap < 1}
+                    >
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEditUnit}>
+                      Cancel
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span>
+                    {u.name}{" "}
+                    <span className="text-muted-foreground">
+                      ({u.type}, {u.booking_mode === "request" ? "request approval" : "direct"}, cap{" "}
+                      {u.capacity})
+                    </span>
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      className="flex h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+                      value={u.booking_mode}
+                      onChange={(e) => void changeUnitBookingMode(u, e.target.value as "direct" | "request")}
+                    >
+                      <option value="direct">Direct</option>
+                      <option value="request">Request</option>
+                    </select>
+                    <Button size="sm" variant="outline" onClick={() => startEditUnit(u)}>
+                      Edit
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => void toggleUnit(u)}>
+                      {u.is_active ? "Deactivate" : "Activate"}
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => void removeUnit(u.id)}>
+                      Delete
+                    </Button>
+                  </div>
+                </>
+              )}
             </li>
           ))}
           {room.bookable_units.length === 0 && (

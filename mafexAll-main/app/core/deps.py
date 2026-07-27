@@ -52,13 +52,27 @@ async def get_current_user(
     return user
 
 
-async def require_approved_user(user: Annotated[User, Depends(get_current_user)]) -> User:
+async def require_approved_user(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User:
     if user.approval_status != ApprovalStatus.approved.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
                 "code": "not_approved",
-                "message": "Account is not approved for bookings",
+                "message": "Account is not approved to browse or book rooms",
+            },
+        )
+    from app.services.house_rules_service import get_or_create_house_rules, user_must_accept_house_rules
+
+    rules = await get_or_create_house_rules(db)
+    if user_must_accept_house_rules(user, rules):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "house_rules_required",
+                "message": "You must accept the current house rules before using Workspace",
             },
         )
     return user

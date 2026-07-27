@@ -51,10 +51,10 @@ def test_expand_monthly_dates() -> None:
 async def test_create_series_partial_success(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_series_service
 
-    async def noop_email(db, *, booking):  # noqa: ANN001
+    async def noop_email(db, *, bookings):  # noqa: ANN001
         return None
 
-    monkeypatch.setattr(booking_series_service, "send_booking_confirmation_email", noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_confirmation_email", noop_email)
 
     async with AsyncSessionLocal() as db:
         async with db.begin():
@@ -126,10 +126,10 @@ async def test_create_series_partial_success(monkeypatch: pytest.MonkeyPatch) ->
 async def test_cancel_series_from_date(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_series_service
 
-    async def noop_email(db, *, booking):  # noqa: ANN001
+    async def noop_email(db, *, bookings):  # noqa: ANN001
         return None
 
-    monkeypatch.setattr(booking_series_service, "send_booking_confirmation_email", noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_confirmation_email", noop_email)
 
     async with AsyncSessionLocal() as db:
         async with db.begin():

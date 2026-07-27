@@ -29,7 +29,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/signup", status_code=status.HTTP_202_ACCEPTED)
 async def signup(body: SignupRequest, db: Annotated[AsyncSession, Depends(get_db)]) -> dict:
-    await signup_request(db, email=str(body.email), full_name=body.full_name)
+    await signup_request(
+        db,
+        email=str(body.email),
+        full_name=body.full_name,
+        signup_intent=body.signup_intent,
+    )
     return {"detail": "OTP sent to email"}
 
 

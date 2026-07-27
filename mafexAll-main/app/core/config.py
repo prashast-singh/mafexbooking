@@ -36,12 +36,19 @@ class Settings(BaseSettings):
     # Comma-separated browser origins for CORS (dev + production frontend URL).
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
+    # Public site origin for links in emails (no trailing slash).
+    FRONTEND_BASE_URL: str = "http://localhost:3000"
+
     # Local filesystem storage root (contains room_images/, etc.)
     STORAGE_ROOT: Path = Field(default=Path("storage"))
 
     @property
     def cors_allow_origins(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def frontend_base_url(self) -> str:
+        return self.FRONTEND_BASE_URL.rstrip("/")
 
     @property
     def room_images_dir(self) -> Path:

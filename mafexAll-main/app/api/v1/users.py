@@ -13,6 +13,7 @@ from app.schemas.booking_series import BookingSeriesOut
 from app.schemas.user import (
     EmailChangeRequestBody,
     EmailChangeVerifyBody,
+    HouseRulesStatusOut,
     UserEmailHistoryOut,
     UserMeUpdate,
     ManagedRoomBrief,
@@ -20,6 +21,11 @@ from app.schemas.user import (
 )
 from app.services.auth_service import AuthError
 from app.services.booking_series_service import list_user_booking_series
+from app.services.house_rules_service import (
+    accept_house_rules,
+    get_or_create_house_rules,
+    user_must_accept_house_rules,
+)
 from app.services.room_admin_service import list_managed_rooms, user_public_out
 from app.services.user_profile_service import (
     list_user_email_history,
@@ -134,3 +140,26 @@ async def my_email_history(
 ) -> list[UserEmailHistoryOut]:
     rows = await list_user_email_history(db, user_id=user.id)
     return [UserEmailHistoryOut.model_validate(r) for r in rows]
+
+
+@router.get("/me/house-rules", response_model=HouseRulesStatusOut)
+async def my_house_rules(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> HouseRulesStatusOut:
+    rules = await get_or_create_house_rules(db)
+    return HouseRulesStatusOut(
+        content=rules.content or "",
+        version=rules.version,
+        must_accept=user_must_accept_house_rules(user, rules),
+    )
+
+
+@router.post("/me/house-rules/accept", response_model=UserPublic)
+async def accept_my_house_rules(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> UserPublic:
+    await accept_house_rules(db, user=user)
+    await db.refresh(user)
+    return await user_public_out(db, user)

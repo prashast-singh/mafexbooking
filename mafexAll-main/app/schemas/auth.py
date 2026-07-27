@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, Field
 class SignupRequest(BaseModel):
     email: EmailStr
     full_name: str = Field(..., min_length=1, max_length=255)
+    signup_intent: str = Field(..., min_length=1, max_length=2000)
 
 
 class VerifyOtpRequest(BaseModel):

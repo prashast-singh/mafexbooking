@@ -8,6 +8,7 @@
 export type SignupRequestBody = {
   email: string;
   full_name: string;
+  signup_intent: string;
 };
 
 export type VerifyOtpRequestBody = {
@@ -63,6 +64,9 @@ export type UserPublic = {
   created_at: string;
   approved_at: string | null;
   managed_room_ids: number[];
+  accepted_house_rules_version?: number | null;
+  house_rules_version?: number | null;
+  must_accept_house_rules?: boolean;
 };
 
 export type TokenResponse = {
@@ -519,6 +523,7 @@ export type AdminUserOut = {
   approved_at: string | null;
   approved_by_id: number | null;
   tag_ids?: number[];
+  signup_intent?: string | null;
 };
 
 export type AdminUserStatusUpdateBody = {
@@ -535,6 +540,11 @@ export type AdminDashboardSummary = {
   rooms_total: number;
   bookings_today: number;
   users_total: number;
+};
+
+export type AdminPendingCounts = {
+  pending_approvals: number;
+  pending_booking_requests: number;
 };
 
 export type InternalDomainOut = {
@@ -563,6 +573,23 @@ export type BookingPolicyUpdateBody = {
   max_booking_hours_per_day?: number | null;
   max_advance_days?: number | null;
   cancellation_cutoff_minutes?: number | null;
+};
+
+export type HouseRulesOut = {
+  id: number;
+  content: string;
+  version: number;
+  updated_at: string;
+};
+
+export type HouseRulesUpdateBody = {
+  content: string;
+};
+
+export type HouseRulesStatusOut = {
+  content: string;
+  version: number;
+  must_accept: boolean;
 };
 
 export type ApiErrorDetail =

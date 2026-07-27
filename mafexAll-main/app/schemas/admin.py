@@ -35,6 +35,19 @@ class BookingPolicyUpdate(BaseModel):
     cancellation_cutoff_minutes: int | None = Field(None, ge=0, le=10080)
 
 
+class HouseRulesOut(BaseModel):
+    id: int
+    content: str
+    version: int
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class HouseRulesUpdate(BaseModel):
+    content: str = Field(..., max_length=50000)
+
+
 class AdminUserOut(BaseModel):
     id: int
     email: EmailStr
@@ -49,6 +62,7 @@ class AdminUserOut(BaseModel):
     approved_at: datetime | None
     approved_by_id: int | None
     tag_ids: list[int] = []
+    signup_intent: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -67,3 +81,8 @@ class AdminDashboardSummary(BaseModel):
     rooms_total: int
     bookings_today: int
     users_total: int
+
+
+class AdminPendingCounts(BaseModel):
+    pending_approvals: int
+    pending_booking_requests: int

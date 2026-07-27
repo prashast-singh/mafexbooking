@@ -3,6 +3,7 @@ import type {
   BookingSeriesOut,
   EmailChangeRequestBody,
   EmailChangeVerifyBody,
+  HouseRulesStatusOut,
   ManagedRoomBrief,
   PaginatedBookings,
   UserEmailHistoryOut,
@@ -55,4 +56,14 @@ export async function verifyEmailChangeOtp(body: EmailChangeVerifyBody) {
 
 export async function listMyEmailHistory() {
   return apiFetch<UserEmailHistoryOut[]>("/users/me/email-history");
+}
+
+export async function getMyHouseRules() {
+  return apiFetch<HouseRulesStatusOut>("/users/me/house-rules");
+}
+
+export async function acceptMyHouseRules() {
+  return apiFetch<UserPublic>("/users/me/house-rules/accept", {
+    method: "POST",
+  });
 }

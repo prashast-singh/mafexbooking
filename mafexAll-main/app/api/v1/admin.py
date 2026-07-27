@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import AdminUser, CurrentUser
-from app.core.enums import ApprovalStatus, UserType
+from app.core.enums import ApprovalStatus, BookingStatus, UserType
 from app.db.session import get_db
 from app.models.amenity import Amenity
 from app.models.booking import Booking
@@ -21,11 +21,14 @@ from app.models.unit import BookableUnit, UnitConflict
 from app.models.user import User
 from app.schemas.admin import (
     AdminDashboardSummary,
+    AdminPendingCounts,
     AdminRoleUpdate,
     AdminUserOut,
     AdminUserStatusUpdate,
     BookingPolicyOut,
     BookingPolicyUpdate,
+    HouseRulesOut,
+    HouseRulesUpdate,
     InternalDomainCreate,
     InternalDomainOut,
 )
@@ -1011,6 +1014,69 @@ async def patch_policy(
     await db.flush()
     await db.refresh(p)
     return BookingPolicyOut.model_validate(p)
+
+
+@router.get("/config/house-rules", response_model=HouseRulesOut)
+async def get_house_rules_admin(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: AdminUser,
+) -> HouseRulesOut:
+    from app.services.house_rules_service import get_or_create_house_rules
+
+    rules = await get_or_create_house_rules(db)
+    return HouseRulesOut.model_validate(rules)
+
+
+@router.patch("/config/house-rules", response_model=HouseRulesOut)
+async def patch_house_rules_admin(
+    body: HouseRulesUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: AdminUser,
+) -> HouseRulesOut:
+    from app.services.house_rules_service import update_house_rules
+
+    rules = await update_house_rules(db, content=body.content)
+    return HouseRulesOut.model_validate(rules)
+
+
+@router.get("/pending-counts", response_model=AdminPendingCounts)
+async def pending_counts(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> AdminPendingCounts:
+    from app.services.room_admin_service import list_managed_room_ids
+
+    is_global_admin = user.role == "admin"
+    managed_room_ids = await list_managed_room_ids(db, user_id=user.id) if not is_global_admin else []
+    if not is_global_admin and not managed_room_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "forbidden", "message": "Admin access required"},
+        )
+
+    pending_approvals = 0
+    if is_global_admin:
+        pending = await db.execute(
+            select(func.count()).select_from(User).where(
+                User.approval_status == ApprovalStatus.pending.value,
+                User.email_verified.is_(True),
+            )
+        )
+        pending_approvals = int(pending.scalar_one())
+
+    booking_stmt = (
+        select(func.count())
+        .select_from(Booking)
+        .where(Booking.status == BookingStatus.pending.value)
+    )
+    if not is_global_admin:
+        booking_stmt = booking_stmt.where(Booking.room_id.in_(managed_room_ids))
+    pending_bookings = await db.execute(booking_stmt)
+
+    return AdminPendingCounts(
+        pending_approvals=pending_approvals,
+        pending_booking_requests=int(pending_bookings.scalar_one()),
+    )
 
 
 @router.get("/dashboard/summary", response_model=AdminDashboardSummary)

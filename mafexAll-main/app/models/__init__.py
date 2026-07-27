@@ -2,6 +2,7 @@ from app.models.amenity import Amenity, RoomAmenity
 from app.models.tag import RoomTag, Tag, UserTag
 from app.models.booking import Booking
 from app.models.booking_policy import BookingPolicy
+from app.models.house_rules import HouseRules
 from app.models.booking_series import BookingSeries
 from app.models.internal_domain import InternalDomain
 from app.models.otp import OtpCode
@@ -28,5 +29,6 @@ __all__ = [
     "BookingSeries",
     "InternalDomain",
     "BookingPolicy",
+    "HouseRules",
     "UserEmailHistory",
 ]

@@ -15,6 +15,9 @@ class UserPublic(BaseModel):
     created_at: datetime
     approved_at: datetime | None
     managed_room_ids: list[int] = Field(default_factory=list)
+    accepted_house_rules_version: int | None = None
+    house_rules_version: int | None = None
+    must_accept_house_rules: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -43,3 +46,9 @@ class UserEmailHistoryOut(BaseModel):
     changed_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class HouseRulesStatusOut(BaseModel):
+    content: str
+    version: int
+    must_accept: bool

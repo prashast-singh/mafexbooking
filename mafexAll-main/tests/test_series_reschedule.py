@@ -104,7 +104,8 @@ async def _noop_email(*args, **kwargs):  # noqa: ANN002, ANN003
 async def test_series_unit_change_stays_in_series(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_series_service
 
-    monkeypatch.setattr(booking_series_service, "send_booking_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_updated_email", _noop_email)
     monkeypatch.setattr("app.services.booking_service.send_booking_updated_email", _noop_email)
 
     user_id, room_id, unit1_id, unit2_id = await _setup_series_user()
@@ -131,7 +132,8 @@ async def test_series_unit_change_stays_in_series(client: AsyncClient, monkeypat
 async def test_series_date_change_detaches(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_series_service
 
-    monkeypatch.setattr(booking_series_service, "send_booking_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_updated_email", _noop_email)
     monkeypatch.setattr("app.services.booking_service.send_booking_updated_email", _noop_email)
 
     user_id, room_id, unit1_id, unit2_id = await _setup_series_user()
@@ -153,7 +155,8 @@ async def test_series_date_change_detaches(client: AsyncClient, monkeypatch: pyt
 async def test_series_purpose_only_stays_in_series(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_series_service
 
-    monkeypatch.setattr(booking_series_service, "send_booking_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_updated_email", _noop_email)
     monkeypatch.setattr("app.services.booking_service.send_booking_updated_email", _noop_email)
 
     user_id, room_id, unit1_id, _ = await _setup_series_user()
@@ -173,7 +176,8 @@ async def test_series_purpose_only_stays_in_series(client: AsyncClient, monkeypa
 async def test_reschedule_all_future_syncs_series(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_series_service
 
-    monkeypatch.setattr(booking_series_service, "send_booking_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_updated_email", _noop_email)
     monkeypatch.setattr("app.services.booking_service.send_booking_updated_email", _noop_email)
 
     user_id, room_id, unit1_id, unit2_id = await _setup_series_user()
@@ -216,7 +220,8 @@ async def test_reschedule_all_future_syncs_series(monkeypatch: pytest.MonkeyPatc
 async def test_reschedule_from_date_scope(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_series_service
 
-    monkeypatch.setattr(booking_series_service, "send_booking_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_updated_email", _noop_email)
     monkeypatch.setattr("app.services.booking_service.send_booking_updated_email", _noop_email)
 
     user_id, room_id, unit1_id, unit2_id = await _setup_series_user()
@@ -256,7 +261,7 @@ async def test_reschedule_from_date_scope(monkeypatch: pytest.MonkeyPatch) -> No
 async def test_booking_series_out_includes_unit_name(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_series_service
 
-    monkeypatch.setattr(booking_series_service, "send_booking_confirmation_email", _noop_email)
+    monkeypatch.setattr(booking_series_service, "send_series_confirmation_email", _noop_email)
 
     user_id, room_id, unit1_id, _ = await _setup_series_user()
     await _create_weekly_series(user_id, room_id, unit1_id)

@@ -71,6 +71,39 @@ def test_build_booking_ics_includes_purpose_when_empty() -> None:
     assert "Purpose: Not specified" in ics
 
 
+def test_build_series_booking_ics_contains_multiple_vevents() -> None:
+    from app.utils.ics import build_series_booking_ics
+
+    b1 = _sample_booking()
+    b1.id = 10
+    b1.series_id = 7
+    b2 = _sample_booking()
+    b2.id = 11
+    b2.series_id = 7
+    b2.booking_date = date(2026, 7, 21)
+    b2.start_at = datetime(2026, 7, 21, 8, 0, tzinfo=timezone.utc)
+    b2.end_at = datetime(2026, 7, 21, 9, 0, tzinfo=timezone.utc)
+
+    room = Room(name="Seminar Room A", booking_mode="hybrid", capacity=10, location="Building 12", is_active=True)
+    unit = BookableUnit(room_id=1, name="Full room", type="full_room", capacity=10, is_active=True)
+
+    ics = build_series_booking_ics(
+        bookings=[b1, b2],
+        room=room,
+        unit=unit,
+        attendee_email="user@students.uni-marburg.de",
+    )
+
+    assert ics.count("BEGIN:VEVENT") == 2
+    assert ics.count("END:VEVENT") == 2
+    assert ics.count("BEGIN:VCALENDAR") == 1
+    assert "UID:mafex-booking-10@room-booking" in ics
+    assert "UID:mafex-booking-11@room-booking" in ics
+    assert "Series ID: 7" in ics
+    assert "DTSTART:20260714T080000Z" in ics
+    assert "DTSTART:20260721T080000Z" in ics
+
+
 @pytest.mark.asyncio
 async def test_cancellation_email_includes_purpose_not_specified(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services import booking_email_service

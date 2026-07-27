@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mafex Rooms",
+  title: "Workspace",
   description: "Browse and book meeting rooms",
 };
 

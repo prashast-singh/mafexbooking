@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { FIND_ROOM_PATH } from "@/lib/routes";
@@ -46,12 +44,9 @@ export default function AwaitingApprovalPage() {
     <div className="mx-auto max-w-lg px-4 py-12">
       <PageHeader
         title="Awaiting approval"
-        description="An administrator needs to approve your account before you can book rooms. You can still browse the catalog."
+        description="An administrator needs to approve your account before you can browse or book rooms in Workspace."
       />
       <div className="flex flex-wrap gap-2">
-        <Link href={FIND_ROOM_PATH} className={cn(buttonVariants())}>
-          Browse rooms
-        </Link>
         <Button variant="outline" onClick={() => void refresh()}>
           Refresh status
         </Button>

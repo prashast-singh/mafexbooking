@@ -6,12 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import ApprovedUser
 from app.db.session import get_db
 from app.models.amenity import RoomAmenity
 from app.models.room import Room
 from app.models.tag import RoomTag
-from app.models.user import User
 from app.schemas.room_frontend import RoomBrowsePage, RoomDetailPublic
 from app.services.availability_service import filter_rooms_with_available_slot
 from app.services.room_browse_service import (
@@ -29,7 +28,7 @@ router = APIRouter(prefix="/rooms", tags=["rooms"])
 @router.get("", response_model=RoomBrowsePage)
 async def list_rooms(
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[User | None, Depends(get_current_user_optional)],
+    user: ApprovedUser,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     capacity: int | None = Query(None, ge=1),
@@ -95,7 +94,7 @@ async def list_rooms(
 async def get_room(
     room_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[User | None, Depends(get_current_user_optional)],
+    user: ApprovedUser,
 ) -> RoomDetailPublic:
     r = await db.execute(
         select(Room)

@@ -170,34 +170,38 @@ export default function AdminUsersPage() {
       <PageHeader title="Users" description="Directory, roles, account status, and tags." />
       <div className="rounded-lg border">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Approval</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Account</TableHead>
-              <TableHead>Tags</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((u) => (
-              <Fragment key={u.id}>
-                <TableRow>
-                  <TableCell className="font-medium">{u.full_name}</TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>
-                    <StatusBadge value={u.approval_status} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge value={u.role} />
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    <StatusBadge value={u.is_active ? "active" : "inactive"} />
-                    <div className="mt-1 text-xs text-muted-foreground">{accountStatusLabel(u)}</div>
-                  </TableCell>
-                  <TableCell className="max-w-[220px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Approval</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead>Signup note</TableHead>
+                <TableHead>Tags</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((u) => (
+                <Fragment key={u.id}>
+                  <TableRow>
+                    <TableCell className="font-medium">{u.full_name}</TableCell>
+                    <TableCell>{u.email}</TableCell>
+                    <TableCell>
+                      <StatusBadge value={u.approval_status} />
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge value={u.role} />
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <StatusBadge value={u.is_active ? "active" : "inactive"} />
+                      <div className="mt-1 text-xs text-muted-foreground">{accountStatusLabel(u)}</div>
+                    </TableCell>
+                    <TableCell className="max-w-[200px] whitespace-pre-wrap text-xs text-muted-foreground">
+                      {u.signup_intent?.trim() || "—"}
+                    </TableCell>
+                    <TableCell className="max-w-[220px]">
                     <div className="flex flex-wrap gap-2">
                       {allTags.map((t) => {
                         const on = (u.tag_ids ?? []).includes(t.id);
@@ -261,7 +265,7 @@ export default function AdminUsersPage() {
                 </TableRow>
                 {scheduleUserId === u.id && (
                   <TableRow>
-                    <TableCell colSpan={7} className="bg-muted/20">
+                    <TableCell colSpan={8} className="bg-muted/20">
                       <div className="flex flex-wrap items-end gap-3 py-2">
                         <div className="space-y-1">
                           <Label htmlFor={`sched-date-${u.id}`}>Deactivate on</Label>
@@ -290,7 +294,7 @@ export default function AdminUsersPage() {
                 )}
                 {expandedId === u.id && (
                   <TableRow>
-                    <TableCell colSpan={7} className="bg-muted/30">
+                    <TableCell colSpan={8} className="bg-muted/30">
                       {loadingHistoryId === u.id ? (
                         <p className="text-sm text-muted-foreground">Loading email history…</p>
                       ) : (

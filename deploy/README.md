@@ -53,7 +53,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env
-# Edit .env: DATABASE_URL, JWT_SECRET_KEY, SMTP_*, CORS_ORIGINS=https://YOUR_DOMAIN
+# Edit .env: DATABASE_URL, JWT_SECRET_KEY, SMTP_*, CORS_ORIGINS=https://YOUR_DOMAIN, FRONTEND_BASE_URL=https://YOUR_DOMAIN
 
 export PYTHONPATH=.
 alembic upgrade head
@@ -72,6 +72,7 @@ curl http://127.0.0.1:8000/health
 | `DATABASE_URL` | `postgresql+psycopg://mafex:***@localhost:5432/mafex` |
 | `JWT_SECRET_KEY` | `openssl rand -hex 32` |
 | `CORS_ORIGINS` | `https://YOUR_DOMAIN` (add `http://localhost:3000` only if needed) |
+| `FRONTEND_BASE_URL` | `https://YOUR_DOMAIN` (no trailing slash; used in admin email deep links) |
 | `STORAGE_ROOT` | `/opt/mafex/mafexAll-main/storage` (absolute path recommended) |
 
 ## 4. Frontend (`mafexFe-main`)

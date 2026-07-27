@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.enums import ApprovalStatus, OtpPurpose, UserRole, UserType
 from app.core.security import create_access_token
 from app.models.user import User
-from app.services.email_service import send_otp_email
+from app.services.email_service import notify_admins_pending_signup, send_otp_email
 from app.services.internal_domain_service import is_internal_email
 from app.services.otp_service import create_and_store_otp, verify_otp_code
 from app.services.user_admin_service import ensure_user_account_active
@@ -24,6 +24,7 @@ async def signup_request(
     *,
     email: str,
     full_name: str,
+    signup_intent: str,
 ) -> None:
     email_n = normalize_email(email)
     result = await db.execute(select(User).where(User.email == email_n))
@@ -32,13 +33,16 @@ async def signup_request(
         raise AuthError("email_taken", "Email is already registered", 409)
     internal = await is_internal_email(db, email_n)
     user_type = UserType.internal if internal else UserType.external
+    intent = signup_intent.strip()
     if existing and not existing.email_verified:
         existing.full_name = full_name
         existing.user_type = user_type.value
+        existing.signup_intent = intent
     else:
         user = User(
             email=email_n,
             full_name=full_name,
+            signup_intent=intent,
             role=UserRole.user.value,
             user_type=user_type.value,
             email_verified=False,
@@ -68,6 +72,10 @@ async def verify_signup_otp(
     user.email_verified = True
     user.approval_status = ApprovalStatus.pending.value
     await db.flush()
+    try:
+        await notify_admins_pending_signup(db, user=user)
+    except Exception:
+        pass
     token = create_access_token(str(user.id), {"role": user.role})
     return token
 

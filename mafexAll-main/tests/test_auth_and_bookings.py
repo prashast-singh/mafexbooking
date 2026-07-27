@@ -10,7 +10,7 @@ from app.models.booking_policy import BookingPolicy
 from app.models.internal_domain import InternalDomain
 from app.models.otp import OtpCode
 from app.models.room import Room
-from app.models.unit import BookableUnit, UnitConflict
+from app.models.unit import BookableUnit
 from app.models.user import User
 from app.services.auth_service import verify_signup_otp
 from app.services.booking_service import BookingError, create_booking
@@ -180,7 +180,6 @@ async def test_booking_conflict_rejected() -> None:
             db.add(u1)
             db.add(u2)
             await db.flush()
-            db.add(UnitConflict(unit_id=u1.id, conflict_with_unit_id=u2.id))
             uid = u.id
             rid = room.id
 
@@ -216,6 +215,67 @@ async def test_booking_conflict_rejected() -> None:
                     booking_date=d,
                     start_time=time(14, 0),
                     end_time=time(14, 30),
+                    purpose=None,
+                )
+            assert ei.value.code == "overlap"
+
+
+@pytest.mark.asyncio
+async def test_table_booking_blocks_full_room() -> None:
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            db.add(BookingPolicy(slot_minutes=30, max_booking_hours_per_day=8, max_advance_days=30, cancellation_cutoff_minutes=60))
+            u = User(
+                email="table-first@uni-marburg.de",
+                full_name="TF",
+                role="user",
+                user_type=UserType.internal.value,
+                email_verified=True,
+                approval_status=ApprovalStatus.approved.value,
+                is_active=True,
+            )
+            db.add(u)
+            await db.flush()
+            room = Room(name="R-table-first", booking_mode="hybrid", capacity=10, is_active=True)
+            db.add(room)
+            await db.flush()
+            full = BookableUnit(room_id=room.id, name="Full", type="full_room", capacity=10, is_active=True)
+            table = BookableUnit(room_id=room.id, name="Table1", type="table", capacity=2, is_active=True)
+            db.add_all([full, table])
+            await db.flush()
+            uid = u.id
+            rid = room.id
+            full_id = full.id
+            table_id = table.id
+
+        async with db.begin():
+            r = await db.execute(select(User).where(User.id == uid))
+            user = r.scalar_one()
+            d = date.today()
+            await create_booking(
+                db,
+                user=user,
+                room_id=rid,
+                unit_id=table_id,
+                booking_date=d,
+                start_time=time(14, 0),
+                end_time=time(14, 30),
+                purpose=None,
+            )
+
+        async with db.begin():
+            r = await db.execute(select(User).where(User.id == uid))
+            user = r.scalar_one()
+            d = date.today()
+            with pytest.raises(BookingError) as ei:
+                await create_booking(
+                    db,
+                    user=user,
+                    room_id=rid,
+                    unit_id=full_id,
+                    booking_date=d,
+                    start_time=time(14, 0),
+                    end_time=time(15, 0),
                     purpose=None,
                 )
             assert ei.value.code == "overlap"

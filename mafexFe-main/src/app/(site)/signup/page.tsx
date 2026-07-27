@@ -11,6 +11,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { signupRequest, verifySignupOtp } from "@/lib/api/auth";
 import { OTP_CODE_LENGTH } from "@/lib/constants/auth";
@@ -21,6 +22,11 @@ import { useAuth } from "@/hooks/use-auth";
 const signupSchema = z.object({
   email: z.string().email("Enter a valid email"),
   full_name: z.string().min(1, "Enter your name"),
+  signup_intent: z
+    .string()
+    .trim()
+    .min(1, "Please tell us how you learned about Workspace and what you intend to use it for")
+    .max(2000, "Keep your answer under 2000 characters"),
 });
 
 const otpSchema = z.object({
@@ -39,7 +45,7 @@ export default function SignupPage() {
 
   const detailsForm = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { email: "", full_name: "" },
+    defaultValues: { email: "", full_name: "", signup_intent: "" },
   });
 
   const otpForm = useForm<z.infer<typeof otpSchema>>({
@@ -50,7 +56,11 @@ export default function SignupPage() {
   async function onDetails(values: z.infer<typeof signupSchema>) {
     setSending(true);
     try {
-      await signupRequest({ email: values.email, full_name: values.full_name });
+      await signupRequest({
+        email: values.email,
+        full_name: values.full_name,
+        signup_intent: values.signup_intent.trim(),
+      });
       setEmail(values.email);
       setStep("otp");
       toast.success("Check your email to verify your account.");
@@ -96,6 +106,22 @@ export default function SignupPage() {
             <Input id="email" type="email" autoComplete="email" {...detailsForm.register("email")} />
             {detailsForm.formState.errors.email && (
               <p className="text-xs text-destructive">{detailsForm.formState.errors.email.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="signup_intent">
+              How did you learn about our workspace, and what do you intend to use it for?
+            </Label>
+            <Textarea
+              id="signup_intent"
+              rows={4}
+              placeholder="Tell us briefly how you found Workspace and what you plan to use it for…"
+              {...detailsForm.register("signup_intent")}
+            />
+            {detailsForm.formState.errors.signup_intent && (
+              <p className="text-xs text-destructive">
+                {detailsForm.formState.errors.signup_intent.message}
+              </p>
             )}
           </div>
           <Button type="submit" className="w-full" disabled={sending}>

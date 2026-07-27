@@ -27,7 +27,11 @@ from app.schemas.booking_series import (
     BookingSeriesRescheduleOut,
     SeriesSkippedItem,
 )
-from app.services.booking_email_service import send_booking_confirmation_email
+from app.services.booking_email_service import (
+    send_series_booking_request_notification_to_room_admins,
+    send_series_confirmation_email,
+    send_series_updated_email,
+)
 from app.services.booking_service import (
     BookingError,
     _assert_can_modify_booking,
@@ -259,14 +263,23 @@ async def create_booking_series(
         db.add(booking)
         await db.flush()
         created.append(booking)
-        if booking.status == BookingStatus.confirmed.value:
-            try:
-                await send_booking_confirmation_email(db, booking=booking)
-            except Exception:
-                pass
 
     if not created:
         raise BookingError("no_bookings_created", "No dates could be booked for this series", 409)
+
+    confirmed = [b for b in created if b.status == BookingStatus.confirmed.value]
+    if confirmed:
+        try:
+            await send_series_confirmation_email(db, bookings=confirmed)
+        except Exception:
+            pass
+
+    pending = [b for b in created if b.status == BookingStatus.pending.value]
+    if pending:
+        try:
+            await send_series_booking_request_notification_to_room_admins(db, bookings=pending)
+        except Exception:
+            pass
 
     await db.refresh(series)
     room = await db.get(Room, series.room_id)
@@ -385,6 +398,7 @@ async def reschedule_booking_series(
                 purpose=new_purpose,
                 staff_edit=staff_edit,
                 is_room_mgr=is_room_mgr,
+                send_email=False,
             )
             updated_ids.append(booking.id)
         except BookingError:
@@ -400,6 +414,17 @@ async def reschedule_booking_series(
     series.end_time = body.end_time
     series.purpose = new_purpose
     await db.flush()
+
+    updated_confirmed = [
+        b
+        for b in targets
+        if b.id in set(updated_ids) and b.status == BookingStatus.confirmed.value
+    ]
+    if updated_confirmed:
+        try:
+            await send_series_updated_email(db, bookings=updated_confirmed)
+        except Exception:
+            pass
 
     return BookingSeriesRescheduleOut(
         updated_count=len(updated_ids),
@@ -623,6 +648,7 @@ async def approve_pending_series(
     )
     pending = list(r.scalars().all())
     processed: list[int] = []
+    approved_bookings: list[Booking] = []
     skipped = 0
     for booking in pending:
         try:
@@ -631,10 +657,17 @@ async def approve_pending_series(
                 actor=actor,
                 booking_id=booking.id,
                 reason=reason,
+                send_email=False,
             )
             processed.append(approved.id)
+            approved_bookings.append(approved)
         except BookingError:
             skipped += 1
+    if approved_bookings:
+        try:
+            await send_series_confirmation_email(db, bookings=approved_bookings)
+        except Exception:
+            pass
     return len(processed), processed, skipped
 
 

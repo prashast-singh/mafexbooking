@@ -63,10 +63,10 @@ async def browse_setup(client: AsyncClient, admin_headers: dict[str, str]) -> di
 
 @pytest.mark.asyncio
 async def test_room_list_includes_amenities_and_ordered_images(
-    client: AsyncClient, browse_setup: dict
+    client: AsyncClient, browse_setup: dict, admin_headers: dict[str, str]
 ) -> None:
     rid = browse_setup["room_id"]
-    r = await client.get("/api/v1/rooms")
+    r = await client.get("/api/v1/rooms", headers=admin_headers)
     assert r.status_code == 200
     body = r.json()
     assert "items" in body
@@ -83,19 +83,21 @@ async def test_room_list_includes_amenities_and_ordered_images(
 
 @pytest.mark.asyncio
 async def test_room_list_thumbnail_matches_first_ordered_image(
-    client: AsyncClient, browse_setup: dict
+    client: AsyncClient, browse_setup: dict, admin_headers: dict[str, str]
 ) -> None:
     rid = browse_setup["room_id"]
-    r = await client.get("/api/v1/rooms")
+    r = await client.get("/api/v1/rooms", headers=admin_headers)
     item = next(x for x in r.json()["items"] if x["id"] == rid)
     first = min(item["images"], key=lambda i: (i["sort_order"], i["id"]))
     assert item["thumbnail_url"] == first["file_url"]
 
 
 @pytest.mark.asyncio
-async def test_room_detail_amenities_images_units(client: AsyncClient, browse_setup: dict) -> None:
+async def test_room_detail_amenities_images_units(
+    client: AsyncClient, browse_setup: dict, admin_headers: dict[str, str]
+) -> None:
     rid = browse_setup["room_id"]
-    d = await client.get(f"/api/v1/rooms/{rid}")
+    d = await client.get(f"/api/v1/rooms/{rid}", headers=admin_headers)
     assert d.status_code == 200
     body = d.json()
     assert len(body["amenities"]) == 2
@@ -109,10 +111,14 @@ async def test_room_detail_amenities_images_units(client: AsyncClient, browse_se
 
 
 @pytest.mark.asyncio
-async def test_availability_returns_slot_grid_with_units(client: AsyncClient, browse_setup: dict) -> None:
+async def test_availability_returns_slot_grid_with_units(
+    client: AsyncClient, browse_setup: dict, admin_headers: dict[str, str]
+) -> None:
     rid = browse_setup["room_id"]
     today = date.today().isoformat()
-    r = await client.get(f"/api/v1/availability/rooms/{rid}", params={"date": today})
+    r = await client.get(
+        f"/api/v1/availability/rooms/{rid}", params={"date": today}, headers=admin_headers
+    )
     assert r.status_code == 200
     g = r.json()
     assert g["room_id"] == rid
@@ -176,7 +182,11 @@ async def test_availability_shows_booked_unavailable(client: AsyncClient, admin_
                 purpose=None,
             )
 
-    r = await client.get(f"/api/v1/availability/rooms/{rid}", params={"date": d.isoformat()})
+    r = await client.get(
+        f"/api/v1/availability/rooms/{rid}",
+        params={"date": d.isoformat()},
+        headers=admin_headers,
+    )
     grid = r.json()
     hit = next(
         (s for s in grid["slots"] if s["start_time"] == "10:00" and s["end_time"] == "10:30"),
@@ -209,11 +219,6 @@ async def test_availability_conflict_reason(client: AsyncClient, admin_headers: 
         )
     ).json()["id"]
     fid = f.json()["id"]
-    await client.post(
-        f"/api/v1/admin/bookable-units/{fid}/conflicts",
-        json={"conflict_with_unit_id": tid},
-        headers=admin_headers,
-    )
     d = date.today()
     async with AsyncSessionLocal() as db:
         async with db.begin():
@@ -239,7 +244,11 @@ async def test_availability_conflict_reason(client: AsyncClient, admin_headers: 
                 purpose=None,
             )
 
-    r = await client.get(f"/api/v1/availability/rooms/{rid}", params={"date": d.isoformat()})
+    r = await client.get(
+        f"/api/v1/availability/rooms/{rid}",
+        params={"date": d.isoformat()},
+        headers=admin_headers,
+    )
     grid = r.json()
     hit = next(
         (s for s in grid["slots"] if s["start_time"] == "11:00" and s["end_time"] == "11:30"),
@@ -309,7 +318,7 @@ async def test_room_list_available_true_filters_by_time_range(
         "start_time": "15:00",
         "end_time": "16:00",
     }
-    r = await client.get("/api/v1/rooms", params=params)
+    r = await client.get("/api/v1/rooms", params=params, headers=admin_headers)
     assert r.status_code == 200
     ids = {x["id"] for x in r.json()["items"]}
     assert id1 not in ids
@@ -367,6 +376,7 @@ async def test_room_list_available_excludes_room_when_full_range_inside_booking(
             "start_time": "09:00",
             "end_time": "10:00",
         },
+        headers=admin_headers,
     )
     assert r.status_code == 200
     assert rid not in {x["id"] for x in r.json()["items"]}
@@ -429,15 +439,19 @@ async def test_room_list_available_excludes_with_unit_type_full_room(
             "end_time": "10:00:00",
         },
     ):
-        r = await client.get("/api/v1/rooms", params=params)
+        r = await client.get("/api/v1/rooms", params=params, headers=admin_headers)
         assert r.status_code == 200, params
         assert rid not in {x["id"] for x in r.json()["items"]}, params
 
 
 @pytest.mark.asyncio
-async def test_availability_search_response_shape(client: AsyncClient, browse_setup: dict) -> None:
+async def test_availability_search_response_shape(
+    client: AsyncClient, browse_setup: dict, admin_headers: dict[str, str]
+) -> None:
     today = date.today().isoformat()
-    r = await client.get("/api/v1/availability/search", params={"date": today})
+    r = await client.get(
+        "/api/v1/availability/search", params={"date": today}, headers=admin_headers
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["date"] == today
@@ -470,7 +484,7 @@ async def test_create_unit_request_mode_and_booking_is_pending(
     unit = uresp.json()
     assert unit["booking_mode"] == "request"
 
-    detail = await client.get(f"/api/v1/rooms/{rid}")
+    detail = await client.get(f"/api/v1/rooms/{rid}", headers=admin_headers)
     assert detail.json()["bookable_units"][0]["booking_mode"] == "request"
 
     async with AsyncSessionLocal() as db:

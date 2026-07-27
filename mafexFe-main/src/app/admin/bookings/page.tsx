@@ -319,6 +319,7 @@ export default function AdminBookingsPage() {
         title={cancelTarget?.type === "single" ? "Cancel booking?" : "Cancel series bookings?"}
         description="This action cannot be undone."
         confirmLabel="Cancel booking(s)"
+        cancelLabel="Go back"
         destructive
         onConfirm={confirmCancel}
       />
