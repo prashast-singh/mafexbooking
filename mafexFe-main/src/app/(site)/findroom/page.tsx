@@ -34,7 +34,7 @@ export default async function FindRoomPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-8">
       <PageHeader
-        title="Meeting rooms"
+        title="Book a place"
         description="Pick a date and time range and unit type to see what you can book."
       />
       <RoomFilters amenities={amenities} />
