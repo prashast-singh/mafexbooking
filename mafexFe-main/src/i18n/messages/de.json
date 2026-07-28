@@ -95,15 +95,10 @@
   },
 
   "footer": {
-
     "phone": "Telefon",
-
-    "social": "Social-Media-Kontakte",
-
+    "social": "Social Media Kontakte",
     "impressum": "Impressum",
-
-    "orgName": "MAFEX - Marburg Center for Entrepreneurship and Innovation"
-
+    "orgName": "MAFEX - Marburger Zentrum für Entrepreneurship und Innovation"
   },
 
   "auth": {
