@@ -127,7 +127,7 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
         </div>
         <p className="text-xs text-muted-foreground">{t("findRoom.filterIntro")}</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <div className="space-y-1">
           <Label htmlFor="date">{t("common.date")}</Label>
           <Input
@@ -181,19 +181,19 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
             ))}
           </select>
         </div>
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end">
-          <Button type="submit" disabled={pending} className="w-full sm:flex-1">
-            {t("common.apply")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={clearFilters}
-            className="w-full sm:flex-1"
-          >
-            {t("common.clear")}
-          </Button>
-        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button type="submit" disabled={pending} className="min-w-[8rem] flex-1 sm:flex-none">
+          {t("common.apply")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={clearFilters}
+          className="min-w-[8rem] flex-1 sm:flex-none"
+        >
+          {t("common.clear")}
+        </Button>
       </div>
       {amenities.length > 0 && (
         <div className="mt-4 border-t pt-4">
