@@ -21,6 +21,7 @@ import {
 } from "@/lib/api/admin";
 import { listTags } from "@/lib/api/tags";
 import type { AdminUserOut, TagOut, UserEmailHistoryOut } from "@/lib/types/api";
+import { useT } from "@/i18n/use-t";
 import { formatApiError } from "@/lib/utils/errors";
 
 function accountStatusLabel(user: AdminUserOut): string {
@@ -35,6 +36,7 @@ function accountStatusLabel(user: AdminUserOut): string {
 }
 
 export default function AdminUsersPage() {
+  const t = useT();
   const [rows, setRows] = useState<AdminUserOut[]>([]);
   const [allTags, setAllTags] = useState<TagOut[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,19 +169,19 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-8 p-6">
-      <PageHeader title="Users" description="Directory, roles, account status, and tags." />
+      <PageHeader title={t("admin.users")} description={t("admin.usersDescription")} />
       <div className="rounded-lg border">
         <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Approval</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Signup note</TableHead>
-                <TableHead>Tags</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("common.email")}</TableHead>
+                <TableHead>{t("admin.approval")}</TableHead>
+                <TableHead>{t("admin.role")}</TableHead>
+                <TableHead>{t("admin.account")}</TableHead>
+                <TableHead>{t("admin.signupNote")}</TableHead>
+                <TableHead>{t("admin.tags")}</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -203,16 +205,16 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell className="max-w-[220px]">
                     <div className="flex flex-wrap gap-2">
-                      {allTags.map((t) => {
-                        const on = (u.tag_ids ?? []).includes(t.id);
+                      {allTags.map((tag) => {
+                        const on = (u.tag_ids ?? []).includes(tag.id);
                         return (
-                          <label key={t.id} className="flex items-center gap-1 text-xs">
+                          <label key={tag.id} className="flex items-center gap-1 text-xs">
                             <input
                               type="checkbox"
                               checked={on}
-                              onChange={(e) => void toggleUserTag(u, t.id, e.target.checked)}
+                              onChange={(e) => void toggleUserTag(u, tag.id, e.target.checked)}
                             />
-                            {t.name}
+                            {tag.name}
                           </label>
                         );
                       })}

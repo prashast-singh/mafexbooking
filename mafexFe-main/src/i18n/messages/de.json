@@ -1,0 +1,584 @@
+{
+
+  "common": {
+
+    "workspace": "Workspace",
+
+    "loading": "Laden…",
+
+    "save": "Speichern",
+
+    "saving": "Speichern…",
+
+    "cancel": "Abbrechen",
+
+    "confirm": "Bestätigen",
+
+    "delete": "Löschen",
+
+    "edit": "Bearbeiten",
+
+    "back": "Zurück",
+
+    "backToSite": "← Zurück zur Website",
+
+    "logOut": "Abmelden",
+
+    "logIn": "Anmelden",
+
+    "signUp": "Registrieren",
+
+    "accept": "Akzeptieren",
+
+    "accepting": "Akzeptieren…",
+
+    "refresh": "Aktualisieren",
+
+    "search": "Suchen",
+
+    "apply": "Filter anwenden",
+
+    "clear": "Zurücksetzen",
+
+    "active": "aktiv",
+
+    "inactive": "inaktiv",
+
+    "yes": "Ja",
+
+    "no": "Nein",
+
+    "name": "Name",
+
+    "email": "E-Mail",
+
+    "status": "Status",
+
+    "actions": "Aktionen",
+
+    "capacity": "Kapazität",
+
+    "date": "Datum",
+
+    "time": "Zeit",
+
+    "room": "Raum",
+
+    "unit": "Einheit",
+
+    "purpose": "Zweck",
+
+    "optional": "optional"
+
+  },
+
+  "nav": {
+
+    "rooms": "Räume",
+
+    "myBookings": "Meine Buchungen",
+
+    "settings": "Einstellungen",
+
+    "admin": "Admin",
+
+    "roomAdmin": "Raum-Admin",
+
+    "adminDashboard": "Admin-Dashboard",
+
+    "bookingRequests": "Buchungsanfragen",
+
+    "awaitingApproval": "Freigabe ausstehend",
+
+    "language": "Sprache"
+
+  },
+
+  "footer": {
+
+    "phone": "Telefon",
+
+    "social": "Social-Media-Kontakte",
+
+    "impressum": "Impressum",
+
+    "orgName": "MAFEX - Marburg Center for Entrepreneurship and Innovation"
+
+  },
+
+  "auth": {
+
+    "loginTitle": "Anmelden",
+
+    "loginDescription": "Wir senden Ihnen einen Einmalcode per E-Mail. Kein Passwort nötig.",
+
+    "signupTitle": "Registrieren",
+
+    "signupDescription": "Erstellen Sie Ihr Konto mit E-Mail-Bestätigung.",
+
+    "fullName": "Vollständiger Name",
+
+    "emailLabel": "E-Mail",
+
+    "otpLabel": "Bestätigungscode",
+
+    "sendCode": "Code senden",
+
+    "sending": "Senden…",
+
+    "verify": "Bestätigen",
+
+    "verifying": "Bestätigen…",
+
+    "checkEmailLogin": "Prüfen Sie Ihre E-Mail auf einen Anmeldecode.",
+
+    "checkEmailSignup": "Prüfen Sie Ihre E-Mail, um Ihr Konto zu bestätigen.",
+
+    "haveAccount": "Bereits ein Konto?",
+
+    "needAccount": "Noch kein Konto?",
+
+    "signupIntentLabel": "Wie haben Sie von unserem Workspace erfahren, und wofür möchten Sie ihn nutzen?",
+
+    "signupIntentHint": "Erforderlich. Hilft uns bei der Prüfung neuer Registrierungen.",
+
+    "invalidEmail": "Gültige E-Mail eingeben",
+
+    "enterName": "Namen eingeben",
+
+    "intentRequired": "Bitte teilen Sie uns mit, wie Sie vom Workspace erfahren haben und wofür Sie ihn nutzen möchten",
+
+    "intentTooLong": "Antwort bitte unter 2000 Zeichen halten",
+
+    "otpLength": "Geben Sie den {n}-stelligen Code aus Ihrer E-Mail ein",
+
+    "digitsOnly": "Nur Ziffern",
+
+    "continue": "Weiter",
+
+    "createAccount": "Konto erstellen",
+
+    "codeSentTo": "Code gesendet an",
+
+    "enterCodeSentTo": "Geben Sie den Code ein, den wir gesendet haben an",
+
+    "signupIntentPlaceholder": "Erzählen Sie kurz, wie Sie den Workspace gefunden haben und wofür Sie ihn nutzen möchten…"
+
+  },
+
+  "approval": {
+
+    "pendingTitle": "Freigabe ausstehend",
+
+    "pendingDescription": "Ein Administrator muss Ihr Konto freigeben, bevor Sie Räume im Workspace ansehen oder buchen können.",
+
+    "rejectedTitle": "Konto nicht freigegeben",
+
+    "rejectedDescription": "Ihre Registrierung wurde geprüft und konnte nicht freigegeben werden. Kontaktieren Sie den Administrator, falls Sie das für einen Fehler halten.",
+
+    "refreshStatus": "Status aktualisieren"
+
+  },
+
+  "houseRules": {
+
+    "title": "Hausordnung",
+
+    "description": "Bitte lesen und akzeptieren Sie die aktuelle Hausordnung, um Workspace weiter zu nutzen.",
+
+    "loading": "Laden…",
+
+    "empty": "Kein Text verfügbar.",
+
+    "accepted": "Hausordnung akzeptiert."
+
+  },
+
+  "findRoom": {
+
+    "title": "Platz buchen",
+
+    "description": "Wählen Sie Datum, Zeitspanne und Einheitstyp, um verfügbare Buchungen zu sehen.",
+
+    "loadFiltersError": "Filter konnten nicht geladen werden",
+
+    "filterTitle": "Verfügbare Räume finden",
+
+    "anyUnitType": "Beliebiger Einheitstyp",
+
+    "fullRoom": "Ganzer Raum",
+
+    "halfRoom": "Halber Raum",
+
+    "section": "Bereich",
+
+    "table": "Tisch",
+
+    "startTime": "Startzeit",
+
+    "endTime": "Endzeit",
+
+    "unitType": "Einheitstyp",
+
+    "minCapacity": "Mindestkapazität",
+
+    "any": "Beliebig",
+
+    "amenities": "Ausstattung",
+
+    "amenitiesMatchAll": "Ausstattung (alle ausgewählten müssen passen)",
+
+    "availabilityHint": "Datum, Start- und Endzeit gemeinsam setzen, um nach Verfügbarkeit zu filtern.",
+
+    "endAfterStart": "Endzeit muss nach der Startzeit liegen.",
+
+    "filterIntro": "Wählen Sie Datum, Zeitspanne und Einheitstyp, um verfügbare Buchungen zu sehen."
+
+  },
+
+  "availability": {
+
+    "time": "Zeit",
+
+    "selectStart": "Wählen Sie eine Startzeit und danach eine Endzeit in derselben Spalte.",
+
+    "selectEnd": "Start gewählt — jetzt Endzeit in derselben Spalte wählen (oder dieselbe Zeit für einen einzelnen Slot).",
+
+    "rangeSelected": "Zeitraum: {start} – {end}. Klicken Sie eine andere Zeit, um ihn zu ändern.",
+
+    "timeRange": "Zeitraum:",
+
+    "loading": "Verfügbarkeit wird geladen…",
+
+    "empty": "Keine Zeiten für dieses Datum verfügbar.",
+
+    "selected": "Ausgewählt",
+
+    "free": "Frei",
+
+    "unavailable": "Nicht verfügbar",
+
+    "rangeUnavailable": "Dieser Zeitraum enthält nicht verfügbare Zeiten. Anderen Zeitraum oder andere Einheit wählen.",
+
+    "windowHint": "Buchbare Zeiten {start}–{end} · {minutes}-Minuten-Schritte. Start und dann Ende (gleiche Spalte) wählen."
+
+  },
+
+  "booking": {
+
+    "book": "Buchen",
+
+    "booking": "Buchen…",
+
+    "myBookingsTitle": "Meine Buchungen",
+
+    "myBookingsDescription": "Ihre kommenden und vergangenen Raumbuchungen.",
+
+    "noBookings": "Noch keine Buchungen.",
+
+    "noBookingsHint": "Wählen Sie einen Raum und eine Zeit, um zu buchen.",
+
+    "browseRooms": "Räume durchsuchen",
+
+    "cancelBooking": "Buchung stornieren",
+
+    "reschedule": "Verschieben",
+
+    "confirmed": "Bestätigt",
+
+    "pending": "Ausstehend",
+
+    "denied": "Abgelehnt",
+
+    "cancelled": "Storniert",
+
+    "series": "Serie"
+
+  },
+
+  "settings": {
+
+    "title": "Einstellungen",
+
+    "description": "Profil und E-Mail aktualisieren.",
+
+    "profile": "Profil",
+
+    "changeEmail": "E-Mail ändern",
+
+    "saveName": "Name speichern",
+
+    "currentEmail": "Aktuell:",
+
+    "newEmail": "Neue E-Mail",
+
+    "sendVerification": "Bestätigungscode senden",
+
+    "confirmNewEmail": "Neue E-Mail bestätigen",
+
+    "previousEmails": "Frühere E-Mails",
+
+    "noPreviousEmails": "Keine früheren E-Mails",
+
+    "noPreviousEmailsHint": "Frühere Adressen erscheinen hier nach einer E-Mail-Änderung.",
+
+    "changed": "Geändert",
+
+    "nameUpdated": "Name aktualisiert.",
+
+    "emailUpdated": "E-Mail aktualisiert.",
+
+    "checkNewEmail": "Prüfen Sie Ihre neue E-Mail auf einen Bestätigungscode."
+
+  },
+
+  "roomDetail": {
+
+    "bookThisRoom": "Diesen Raum buchen",
+
+    "capacity": "Kapazität",
+
+    "location": "Ort",
+
+    "mode": "Modus",
+
+    "amenities": "Ausstattung",
+
+    "tags": "Tags",
+
+    "loginToBook": "Anmelden zum Buchen",
+
+    "approvedToBook": "Ihr Konto muss freigegeben sein, bevor Sie buchen können.",
+
+    "allRooms": "Alle Räume",
+
+    "availability": "Verfügbarkeit",
+
+    "unavailableTitle": "Raum nicht verfügbar",
+
+    "notFound": "Raum nicht gefunden."
+
+  },
+
+  "admin": {
+
+    "dashboard": "Dashboard",
+
+    "dashboardDescription": "Übersicht Ihres Workspace.",
+
+    "approvals": "Freigaben",
+
+    "bookingRequests": "Buchungsanfragen",
+
+    "bookings": "Buchungen",
+
+    "users": "Benutzer",
+
+    "rooms": "Räume",
+
+    "amenities": "Ausstattung",
+
+    "amenitiesDescription": "Bezeichnungen zum Filtern von Räumen.",
+
+    "tags": "Tags",
+
+    "tagsDescription": "Raumsichtbarkeit einschränken: getaggte Nutzer sehen nur Räume mit passenden Tags.",
+
+    "bookingPolicy": "Buchungsrichtlinie",
+
+    "houseRules": "Hausordnung",
+
+    "pendingApprovals": "Ausstehende Freigaben",
+
+    "pendingApprovalsDescription": "Neue Registrierungen freigeben oder ablehnen.",
+
+    "noPendingUsers": "Keine ausstehenden Nutzer",
+
+    "noPendingUsersDescription": "Neue Registrierungen erscheinen hier.",
+
+    "type": "Typ",
+
+    "signupIntent": "Wie gefunden / geplante Nutzung",
+
+    "userApproved": "Nutzer freigegeben.",
+
+    "userRejected": "Nutzer abgelehnt.",
+
+    "approve": "Freigeben",
+
+    "reject": "Ablehnen",
+
+    "mode": "Modus",
+
+    "edit": "Bearbeiten",
+
+    "createRoom": "Raum anlegen",
+
+    "bookingsToday": "Buchungen heute",
+
+    "reviewLink": "Prüfen →",
+
+    "manageLink": "Verwalten →",
+
+    "directoryLink": "Verzeichnis →",
+
+    "bookingRequestsDescription": "Ausstehende Buchungen freigeben oder ablehnen.",
+
+    "allRooms": "Alle Räume",
+
+    "allMyRooms": "Alle meine Räume",
+
+    "updatingRequests": "Anfragen werden aktualisiert…",
+
+    "noPendingBookings": "Keine ausstehenden Buchungen",
+
+    "noPendingBookingsDescription": "Anfragen erscheinen hier.",
+
+    "denyBooking": "Buchung ablehnen?",
+
+    "denySeriesPending": "Alle ausstehenden der Serie ablehnen?",
+
+    "denyReasonDescription": "Optional einen Grund angeben — wird dem Nutzer per E-Mail mitgeteilt.",
+
+    "deny": "Ablehnen",
+
+    "reasonOptional": "Grund (optional)",
+
+    "reasonPlaceholder": "An diesem Datum nicht verfügbar",
+
+    "bookingApproved": "Buchung freigegeben.",
+
+    "bookingDenied": "Buchung abgelehnt.",
+
+    "deniedCount": "{count} Buchung(en) abgelehnt.",
+
+    "approvedCount": "{count} Buchung(en) freigegeben.",
+
+    "allBookings": "Alle Buchungen",
+
+    "roomBookings": "Raumbuchungen",
+
+    "allBookingsDescription": "Vergangene und kommende Buchungen ansehen und stornieren.",
+
+    "manageBookingsFor": "Buchungen verwalten für: {rooms}",
+
+    "roomBookingsDescription": "Buchungen für Räume verwalten, die Sie administrieren.",
+
+    "from": "Von",
+
+    "to": "Bis",
+
+    "allStatuses": "Alle Status",
+
+    "confirmed": "Bestätigt",
+
+    "pending": "Ausstehend",
+
+    "cancelled": "Storniert",
+
+    "denied": "Abgelehnt",
+
+    "bookingType": "Buchungstyp",
+
+    "allTypes": "Alle Typen",
+
+    "single": "Einzel",
+
+    "series": "Serie",
+
+    "seriesNumber": "Serie #",
+
+    "seriesPlaceholder": "z. B. 12",
+
+    "userSearch": "Nutzersuche",
+
+    "userSearchPlaceholder": "E-Mail oder Name",
+
+    "viewAll": "Alle",
+
+    "upcoming": "Kommend",
+
+    "past": "Vergangen",
+
+    "updatingBookings": "Buchungen werden aktualisiert…",
+
+    "noBookings": "Keine Buchungen",
+
+    "noBookingsDescription": "Filter anpassen oder später erneut prüfen.",
+
+    "cancelBookingConfirm": "Buchung stornieren?",
+
+    "cancelSeriesConfirm": "Serienbuchungen stornieren?",
+
+    "cannotUndo": "Diese Aktion kann nicht rückgängig gemacht werden.",
+
+    "cancelBookingsConfirmLabel": "Buchung(en) stornieren",
+
+    "bookingCancelled": "Buchung storniert.",
+
+    "cancelledCount": "{count} Buchung(en) storniert.",
+
+    "cancelledFutureCount": "{count} zukünftige Buchung(en) storniert.",
+
+    "usersDescription": "Verzeichnis, Rollen, Kontostatus und Tags.",
+
+    "approval": "Freigabe",
+
+    "role": "Rolle",
+
+    "account": "Konto",
+
+    "signupNote": "Registrierungsnotiz",
+
+    "roomsDescription": "Buchbare Räume anlegen und verwalten.",
+
+    "noRooms": "Keine Räume",
+
+    "noRoomsDescription": "Legen Sie Ihren ersten Raum an, um zu starten.",
+
+    "houseRulesTitle": "Hausordnung",
+
+    "houseRulesDescription": "Bedingungen, die Nutzer akzeptieren müssen. Geänderter Text erhöht die Version und fordert alle erneut zur Zustimmung auf.",
+
+    "rulesText": "Regeltext",
+
+    "currentVersion": "Aktuelle Version: {version}",
+
+    "saveHouseRules": "Hausordnung speichern",
+
+    "houseRulesSaved": "Hausordnung gespeichert.",
+
+    "houseRulesSavedBump": "Hausordnung gespeichert (Version {version}). Nutzer müssen erneut akzeptieren.",
+
+    "houseRulesPlaceholder": "Leer lassen, um die Zustimmungspflicht zu deaktivieren, bis Regeln veröffentlicht werden.",
+
+    "bookingPolicyTitle": "Buchungsrichtlinie",
+
+    "bookingPolicyDescription": "Globale Limits für Slots, Tagesstunden, Vorausbuchung und Stornierungsfrist.",
+
+    "slotMinutes": "Slotlänge (Minuten)",
+
+    "slotMinutesHint": "Erlaubter Bereich: 15–120.",
+
+    "maxHoursPerDay": "Max. Buchungsstunden pro Tag",
+
+    "maxHoursPerDayHint": "Gesamte bestätigte Buchungszeit eines Nutzers an einem Kalendertag (1–24 Stunden).",
+
+    "maxAdvanceDays": "Max. Vorausbuchungstage",
+
+    "maxAdvanceDaysHint": "Wie weit im Voraus gebucht werden kann (1–365 Tage).",
+
+    "cancellationCutoff": "Stornierungsfrist (Minuten)",
+
+    "cancellationCutoffHint": "Mindestfrist vor Beginn für Nutzerstornierungen (0–10080 Minuten).",
+
+    "savePolicy": "Richtlinie speichern",
+
+    "policySaved": "Buchungsrichtlinie gespeichert.",
+
+    "goBack": "Zurück"
+
+  }
+
+}
+

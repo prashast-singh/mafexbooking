@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -12,29 +12,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useT } from "@/i18n/use-t";
 import { loginRequestOtp, loginVerifyOtp } from "@/lib/api/auth";
 import { OTP_CODE_LENGTH } from "@/lib/constants/auth";
 import { formatApiError } from "@/lib/utils/errors";
 import { FIND_ROOM_PATH } from "@/lib/routes";
 import { useAuth } from "@/hooks/use-auth";
 
-const emailSchema = z.object({
-  email: z.string().email("Enter a valid email"),
-});
-
-const otpSchema = z.object({
-  otp: z
-    .string()
-    .length(OTP_CODE_LENGTH, `Enter the ${OTP_CODE_LENGTH}-digit code from your email`)
-    .regex(/^\d+$/, "Digits only"),
-});
-
 export default function LoginPage() {
   const router = useRouter();
   const { refresh } = useAuth();
+  const t = useT();
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
+
+  const emailSchema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t("auth.invalidEmail")),
+      }),
+    [t],
+  );
+
+  const otpSchema = useMemo(
+    () =>
+      z.object({
+        otp: z
+          .string()
+          .length(OTP_CODE_LENGTH, t("auth.otpLength", { n: OTP_CODE_LENGTH }))
+          .regex(/^\d+$/, t("auth.digitsOnly")),
+      }),
+    [t],
+  );
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -52,7 +62,7 @@ export default function LoginPage() {
       await loginRequestOtp(values.email);
       setEmail(values.email);
       setStep("otp");
-      toast.success("Check your email for a login code.");
+      toast.success(t("auth.checkEmailLogin"));
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -78,27 +88,27 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-12">
-      <PageHeader title="Log in" description="We’ll email you a one-time code." />
+      <PageHeader title={t("auth.loginTitle")} description={t("auth.loginDescription")} />
       {step === "email" ? (
         <form onSubmit={emailForm.handleSubmit(onEmail)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.emailLabel")}</Label>
             <Input id="email" type="email" autoComplete="email" {...emailForm.register("email")} />
             {emailForm.formState.errors.email && (
               <p className="text-xs text-destructive">{emailForm.formState.errors.email.message}</p>
             )}
           </div>
           <Button type="submit" className="w-full" disabled={sending}>
-            {sending ? "Sending…" : "Send code"}
+            {sending ? t("auth.sending") : t("auth.sendCode")}
           </Button>
         </form>
       ) : (
         <form onSubmit={otpForm.handleSubmit(onOtp)} className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Code sent to <span className="font-medium text-foreground">{email}</span>
+            {t("auth.codeSentTo")} <span className="font-medium text-foreground">{email}</span>
           </p>
           <div className="space-y-2">
-            <Label htmlFor="otp">One-time code</Label>
+            <Label htmlFor="otp">{t("auth.otpLabel")}</Label>
             <Input
               id="otp"
               inputMode="numeric"
@@ -112,18 +122,18 @@ export default function LoginPage() {
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => setStep("email")}>
-              Back
+              {t("common.back")}
             </Button>
             <Button type="submit" className="flex-1" disabled={sending}>
-              {sending ? "Verifying…" : "Verify"}
+              {sending ? t("auth.verifying") : t("auth.verify")}
             </Button>
           </div>
         </form>
       )}
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        No account?{" "}
+        {t("auth.needAccount")}{" "}
         <Link href="/signup" className="text-primary underline underline-offset-4">
-          Sign up
+          {t("common.signUp")}
         </Link>
       </p>
     </div>

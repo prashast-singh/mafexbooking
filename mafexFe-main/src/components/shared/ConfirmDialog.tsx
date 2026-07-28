@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n/use-t";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -27,12 +28,16 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   destructive,
   onConfirm,
   children,
 }: ConfirmDialogProps) {
+  const t = useT();
+  const confirmText = confirmLabel ?? t("common.confirm");
+  const cancelText = cancelLabel ?? t("common.cancel");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="sm:max-w-md">
@@ -43,7 +48,7 @@ export function ConfirmDialog({
         {children}
         <DialogFooter className="sm:justify-end">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {cancelLabel}
+            {cancelText}
           </Button>
           <Button
             type="button"
@@ -53,7 +58,7 @@ export function ConfirmDialog({
               onOpenChange(false);
             }}
           >
-            {confirmLabel}
+            {confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

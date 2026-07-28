@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { useT } from "@/i18n/use-t";
 import { getRoomAvailability } from "@/lib/api/availability";
 import { getRoom } from "@/lib/api/rooms";
 import type { RoomAvailabilityGrid, RoomDetailPublic } from "@/lib/types/api";
@@ -28,6 +29,7 @@ import { ApiError } from "@/lib/api/client";
 
 export function RoomDetailClient({ roomId }: { roomId: number }) {
   const { user } = useAuth();
+  const t = useT();
   const [room, setRoom] = useState<RoomDetailPublic | null>(null);
   const [roomError, setRoomError] = useState<string | null>(null);
   const [roomLoading, setRoomLoading] = useState(true);
@@ -44,13 +46,13 @@ export function RoomDetailClient({ roomId }: { roomId: number }) {
       .catch((e) => {
         setRoom(null);
         if (e instanceof ApiError && e.status === 404) {
-          setRoomError("Room not found or not available for your account.");
+          setRoomError(t("roomDetail.notFound"));
         } else {
           setRoomError(formatApiError(e));
         }
       })
       .finally(() => setRoomLoading(false));
-  }, [roomId]);
+  }, [roomId, t]);
 
   const load = useCallback(async () => {
     if (!room) return;
@@ -76,7 +78,10 @@ export function RoomDetailClient({ roomId }: { roomId: number }) {
   if (roomError || !room) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <ErrorState title="Room unavailable" message={roomError ?? "Room not found."} />
+        <ErrorState
+          title={t("roomDetail.unavailableTitle")}
+          message={roomError ?? t("roomDetail.notFound")}
+        />
       </div>
     );
   }
@@ -88,7 +93,7 @@ export function RoomDetailClient({ roomId }: { roomId: number }) {
         className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 inline-flex")}
       >
         <ArrowLeft className="mr-1 h-4 w-4" />
-        All rooms
+        {t("roomDetail.allRooms")}
       </Link>
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
@@ -108,7 +113,7 @@ export function RoomDetailClient({ roomId }: { roomId: number }) {
             <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                Capacity {room.capacity}
+                {t("roomDetail.capacity")} {room.capacity}
               </span>
               {room.location && (
                 <span className="flex items-center gap-1">
@@ -119,15 +124,15 @@ export function RoomDetailClient({ roomId }: { roomId: number }) {
             </div>
             {room.description && <p className="mt-4 text-muted-foreground">{room.description}</p>}
           </div>
-          <SectionCard title="Amenities">
+          <SectionCard title={t("roomDetail.amenities")}>
             <RoomAmenitiesList amenities={room.amenities} />
           </SectionCard>
         </div>
 
         <div className="space-y-6">
-          <SectionCard title="Availability">
+          <SectionCard title={t("roomDetail.availability")}>
             <div className="mb-4 space-y-2">
-              <Label htmlFor="book-date">Date</Label>
+              <Label htmlFor="book-date">{t("common.date")}</Label>
               <Input
                 id="book-date"
                 type="date"
@@ -142,7 +147,7 @@ export function RoomDetailClient({ roomId }: { roomId: number }) {
               onSelect={setSelection}
             />
           </SectionCard>
-          <SectionCard title="Book this space">
+          <SectionCard title={t("roomDetail.bookThisRoom")}>
             <BookingForm
               roomId={room.id}
               bookingDate={date}
@@ -154,12 +159,7 @@ export function RoomDetailClient({ roomId }: { roomId: number }) {
               }}
             />
             {!user && (
-              <p className="mt-3 text-sm text-muted-foreground">
-                <Link href="/login" className="text-primary underline underline-offset-4">
-                  Log in
-                </Link>{" "}
-                to book.
-              </p>
+              <p className="mt-3 text-sm text-muted-foreground">{t("roomDetail.loginToBook")}</p>
             )}
           </SectionCard>
         </div>

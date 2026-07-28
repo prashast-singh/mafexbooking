@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -13,35 +13,45 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useT } from "@/i18n/use-t";
 import { signupRequest, verifySignupOtp } from "@/lib/api/auth";
 import { OTP_CODE_LENGTH } from "@/lib/constants/auth";
 import { formatApiError } from "@/lib/utils/errors";
 import { FIND_ROOM_PATH } from "@/lib/routes";
 import { useAuth } from "@/hooks/use-auth";
 
-const signupSchema = z.object({
-  email: z.string().email("Enter a valid email"),
-  full_name: z.string().min(1, "Enter your name"),
-  signup_intent: z
-    .string()
-    .trim()
-    .min(1, "Please tell us how you learned about Workspace and what you intend to use it for")
-    .max(2000, "Keep your answer under 2000 characters"),
-});
-
-const otpSchema = z.object({
-  otp: z
-    .string()
-    .length(OTP_CODE_LENGTH, `Enter the ${OTP_CODE_LENGTH}-digit code from your email`)
-    .regex(/^\d+$/, "Digits only"),
-});
-
 export default function SignupPage() {
   const router = useRouter();
   const { refresh } = useAuth();
+  const t = useT();
   const [step, setStep] = useState<"details" | "otp">("details");
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
+
+  const signupSchema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t("auth.invalidEmail")),
+        full_name: z.string().min(1, t("auth.enterName")),
+        signup_intent: z
+          .string()
+          .trim()
+          .min(1, t("auth.intentRequired"))
+          .max(2000, t("auth.intentTooLong")),
+      }),
+    [t],
+  );
+
+  const otpSchema = useMemo(
+    () =>
+      z.object({
+        otp: z
+          .string()
+          .length(OTP_CODE_LENGTH, t("auth.otpLength", { n: OTP_CODE_LENGTH }))
+          .regex(/^\d+$/, t("auth.digitsOnly")),
+      }),
+    [t],
+  );
 
   const detailsForm = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -63,7 +73,7 @@ export default function SignupPage() {
       });
       setEmail(values.email);
       setStep("otp");
-      toast.success("Check your email to verify your account.");
+      toast.success(t("auth.checkEmailSignup"));
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -89,11 +99,11 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-12">
-      <PageHeader title="Sign up" description="Create your account with email verification." />
+      <PageHeader title={t("auth.signupTitle")} description={t("auth.signupDescription")} />
       {step === "details" ? (
         <form onSubmit={detailsForm.handleSubmit(onDetails)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="full_name">Full name</Label>
+            <Label htmlFor="full_name">{t("auth.fullName")}</Label>
             <Input id="full_name" autoComplete="name" {...detailsForm.register("full_name")} />
             {detailsForm.formState.errors.full_name && (
               <p className="text-xs text-destructive">
@@ -102,20 +112,18 @@ export default function SignupPage() {
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.emailLabel")}</Label>
             <Input id="email" type="email" autoComplete="email" {...detailsForm.register("email")} />
             {detailsForm.formState.errors.email && (
               <p className="text-xs text-destructive">{detailsForm.formState.errors.email.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="signup_intent">
-              How did you learn about our workspace, and what do you intend to use it for?
-            </Label>
+            <Label htmlFor="signup_intent">{t("auth.signupIntentLabel")}</Label>
             <Textarea
               id="signup_intent"
               rows={4}
-              placeholder="Tell us briefly how you found Workspace and what you plan to use it for…"
+              placeholder={t("auth.signupIntentPlaceholder")}
               {...detailsForm.register("signup_intent")}
             />
             {detailsForm.formState.errors.signup_intent && (
@@ -125,16 +133,16 @@ export default function SignupPage() {
             )}
           </div>
           <Button type="submit" className="w-full" disabled={sending}>
-            {sending ? "Sending…" : "Continue"}
+            {sending ? t("auth.sending") : t("auth.continue")}
           </Button>
         </form>
       ) : (
         <form onSubmit={otpForm.handleSubmit(onOtp)} className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Enter the code we sent to <span className="font-medium text-foreground">{email}</span>
+            {t("auth.enterCodeSentTo")} <span className="font-medium text-foreground">{email}</span>
           </p>
           <div className="space-y-2">
-            <Label htmlFor="otp">Verification code</Label>
+            <Label htmlFor="otp">{t("auth.otpLabel")}</Label>
             <Input
               id="otp"
               inputMode="numeric"
@@ -147,18 +155,18 @@ export default function SignupPage() {
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => setStep("details")}>
-              Back
+              {t("common.back")}
             </Button>
             <Button type="submit" className="flex-1" disabled={sending}>
-              {sending ? "Verifying…" : "Create account"}
+              {sending ? t("auth.verifying") : t("auth.createAccount")}
             </Button>
           </div>
         </form>
       )}
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
+        {t("auth.haveAccount")}{" "}
         <Link href="/login" className="text-primary underline underline-offset-4">
-          Log in
+          {t("common.logIn")}
         </Link>
       </p>
     </div>

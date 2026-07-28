@@ -8,17 +8,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/i18n/use-t";
 import type { AmenityOut } from "@/lib/types/api";
 import { FIND_ROOM_PATH } from "@/lib/routes";
 import { isValidTimeRange } from "@/lib/utils/time-params";
-
-const UNIT_TYPES = [
-  { value: "", label: "Any unit type" },
-  { value: "full_room", label: "Full room" },
-  { value: "half_room", label: "Half room" },
-  { value: "section", label: "Section" },
-  { value: "table", label: "Table" },
-];
 
 type FilterValues = {
   date: string;
@@ -73,8 +66,17 @@ function buildQuery(sp: URLSearchParams, filters: FilterValues): string {
 export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
   const router = useRouter();
   const sp = useSearchParams();
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [filters, setFilters] = useState<FilterValues>(() => readFilters(sp));
+
+  const unitTypes = [
+    { value: "", label: t("findRoom.anyUnitType") },
+    { value: "full_room", label: t("findRoom.fullRoom") },
+    { value: "half_room", label: t("findRoom.halfRoom") },
+    { value: "section", label: t("findRoom.section") },
+    { value: "table", label: t("findRoom.table") },
+  ];
 
   useEffect(() => {
     setFilters(readFilters(sp));
@@ -86,11 +88,11 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
     const anyTime = timeFields.some(Boolean);
     const allTime = hasCompleteTimeRange(filters);
     if (anyTime && !allTime) {
-      toast.error("Set date, start time, and end time together to filter by availability.");
+      toast.error(t("findRoom.availabilityHint"));
       return;
     }
     if (allTime && !isValidTimeRange(filters.start_time, filters.end_time)) {
-      toast.error("End time must be after start time.");
+      toast.error(t("findRoom.endAfterStart"));
       return;
     }
     startTransition(() => {
@@ -121,15 +123,13 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
       <div className="mb-3 space-y-1">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Filter className="h-4 w-4" />
-          Find available rooms
+          {t("findRoom.filterTitle")}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Pick a date and time range and unit type to see what you can book.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("findRoom.filterIntro")}</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <div className="space-y-1">
-          <Label htmlFor="date">Date</Label>
+          <Label htmlFor="date">{t("common.date")}</Label>
           <Input
             id="date"
             type="date"
@@ -138,7 +138,7 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="start_time">Start</Label>
+          <Label htmlFor="start_time">{t("findRoom.startTime")}</Label>
           <Input
             id="start_time"
             type="time"
@@ -147,7 +147,7 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="end_time">End</Label>
+          <Label htmlFor="end_time">{t("findRoom.endTime")}</Label>
           <Input
             id="end_time"
             type="time"
@@ -156,25 +156,25 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="capacity">Min capacity</Label>
+          <Label htmlFor="capacity">{t("findRoom.minCapacity")}</Label>
           <Input
             id="capacity"
             type="number"
             min={1}
-            placeholder="Any"
+            placeholder={t("findRoom.any")}
             value={filters.capacity}
             onChange={(e) => setFilters((f) => ({ ...f, capacity: e.target.value }))}
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="unit_type">Unit type</Label>
+          <Label htmlFor="unit_type">{t("findRoom.unitType")}</Label>
           <select
             id="unit_type"
             value={filters.unit_type}
             onChange={(e) => setFilters((f) => ({ ...f, unit_type: e.target.value }))}
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
-            {UNIT_TYPES.map((u) => (
+            {unitTypes.map((u) => (
               <option key={u.value || "any"} value={u.value}>
                 {u.label}
               </option>
@@ -183,7 +183,7 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
         </div>
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end">
           <Button type="submit" disabled={pending} className="w-full sm:flex-1">
-            Apply
+            {t("common.apply")}
           </Button>
           <Button
             type="button"
@@ -191,13 +191,13 @@ export function RoomFilters({ amenities }: { amenities: AmenityOut[] }) {
             onClick={clearFilters}
             className="w-full sm:flex-1"
           >
-            Clear
+            {t("common.clear")}
           </Button>
         </div>
       </div>
       {amenities.length > 0 && (
         <div className="mt-4 border-t pt-4">
-          <p className="mb-2 text-sm font-medium">Amenities (match all selected)</p>
+          <p className="mb-2 text-sm font-medium">{t("findRoom.amenitiesMatchAll")}</p>
           <div className="flex flex-wrap gap-4">
             {amenities.map((a) => (
               <label key={a.id} className="flex items-center gap-2 text-sm">

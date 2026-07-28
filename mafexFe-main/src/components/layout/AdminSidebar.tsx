@@ -18,62 +18,67 @@ import {
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { PendingCountBadge } from "@/components/shared/PendingCountBadge";
 import { useAdminPendingCounts } from "@/hooks/use-admin-pending-counts";
 import { useAuth } from "@/hooks/use-auth";
-
-const globalAdminLinks = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/approvals", label: "Approvals", icon: ClipboardList, badgeKey: "approvals" as const },
-  {
-    href: "/admin/booking-requests",
-    label: "Booking requests",
-    icon: ClipboardList,
-    badgeKey: "bookings" as const,
-  },
-  { href: "/admin/bookings", label: "Bookings", icon: CalendarDays },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/rooms", label: "Rooms", icon: Building2 },
-  { href: "/admin/amenities", label: "Amenities", icon: Tags },
-  { href: "/admin/tags", label: "Tags", icon: Tag },
-  { href: "/admin/booking-policy", label: "Booking policy", icon: Settings2 },
-  { href: "/admin/house-rules", label: "House rules", icon: ScrollText },
-];
-
-const roomAdminLinks = [
-  {
-    href: "/admin/booking-requests",
-    label: "Booking requests",
-    icon: ClipboardList,
-    badgeKey: "bookings" as const,
-  },
-  { href: "/admin/bookings", label: "Bookings", icon: CalendarDays },
-];
+import { useT } from "@/i18n/use-t";
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const pending = useAdminPendingCounts();
+  const t = useT();
+
+  const globalAdminLinks = [
+    { href: "/admin", label: t("admin.dashboard"), icon: LayoutDashboard },
+    { href: "/admin/approvals", label: t("admin.approvals"), icon: ClipboardList, badgeKey: "approvals" as const },
+    {
+      href: "/admin/booking-requests",
+      label: t("admin.bookingRequests"),
+      icon: ClipboardList,
+      badgeKey: "bookings" as const,
+    },
+    { href: "/admin/bookings", label: t("admin.bookings"), icon: CalendarDays },
+    { href: "/admin/users", label: t("admin.users"), icon: Users },
+    { href: "/admin/rooms", label: t("admin.rooms"), icon: Building2 },
+    { href: "/admin/amenities", label: t("admin.amenities"), icon: Tags },
+    { href: "/admin/tags", label: t("admin.tags"), icon: Tag },
+    { href: "/admin/booking-policy", label: t("admin.bookingPolicy"), icon: Settings2 },
+    { href: "/admin/house-rules", label: t("admin.houseRules"), icon: ScrollText },
+  ];
+
+  const roomAdminLinks = [
+    {
+      href: "/admin/booking-requests",
+      label: t("admin.bookingRequests"),
+      icon: ClipboardList,
+      badgeKey: "bookings" as const,
+    },
+    { href: "/admin/bookings", label: t("admin.bookings"), icon: CalendarDays },
+  ];
+
   const links = user?.role === "admin" ? globalAdminLinks : roomAdminLinks;
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r bg-muted/30">
-      <div className="flex h-14 items-center border-b px-4">
+      <div className="flex h-14 items-center justify-between gap-2 border-b px-3">
         <Link
           href={user?.role === "admin" ? "/admin" : "/admin/booking-requests"}
-          className="flex items-center gap-2 text-sm font-semibold"
+          className="flex min-w-0 items-center gap-2 text-sm font-semibold"
         >
           <Image
             src="/mafex-logo.png"
             alt="MAFEX"
             width={24}
             height={24}
-            className="h-6 w-6 rounded-sm object-contain"
+            className="h-6 w-6 shrink-0 rounded-sm object-contain"
             unoptimized
             priority
           />
-          Workspace
+          <span className="truncate">{t("common.workspace")}</span>
         </Link>
+        <LanguageSwitcher />
       </div>
       <nav className="flex flex-col gap-1 p-2">
         {links.map(({ href, label, icon: Icon, ...rest }) => {
@@ -109,7 +114,7 @@ export function AdminSidebar() {
           href="/findroom"
           className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "w-full justify-start")}
         >
-          ← Back to site
+          {t("common.backToSite")}
         </Link>
       </div>
     </aside>

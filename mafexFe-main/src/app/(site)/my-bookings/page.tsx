@@ -20,6 +20,7 @@ import { listMyBookingSeries, listMyBookings } from "@/lib/api/users";
 import type { BookingOutWithRoom, BookingSeriesOut } from "@/lib/types/api";
 import { formatApiError } from "@/lib/utils/errors";
 import { useAuth } from "@/hooks/use-auth";
+import { useT } from "@/i18n/use-t";
 
 type CancelAction =
   | { type: "single"; bookingId: number }
@@ -38,6 +39,7 @@ function seriesLabel(series: BookingSeriesOut) {
 
 function MyBookingsContent() {
   const { user, refresh } = useAuth();
+  const t = useT();
   const [items, setItems] = useState<BookingOutWithRoom[]>([]);
   const [series, setSeries] = useState<BookingSeriesOut[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,16 +133,16 @@ function MyBookingsContent() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <PageHeader title="My bookings" description="Upcoming and past reservations." />
+      <PageHeader title={t("booking.myBookingsTitle")} description={t("booking.myBookingsDescription")} />
       {!hasAny ? (
         <div className="space-y-4">
           <EmptyState
-            title="No bookings yet"
-            description="Pick a room and choose a time slot to book."
+            title={t("booking.noBookings")}
+            description={t("booking.noBookingsHint")}
           />
           <div className="flex justify-center">
             <Link href="/findroom" className={cn(buttonVariants())}>
-              Browse rooms
+              {t("booking.browseRooms")}
             </Link>
           </div>
         </div>
@@ -169,7 +171,7 @@ function MyBookingsContent() {
                       )}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {meta ? seriesLabel(meta) : "Series"} · {bookings.length} occurrence(s)
+                      {meta ? seriesLabel(meta) : t("booking.series")} · {bookings.length} occurrence(s)
                     </p>
                     {(meta?.purpose?.trim() || first?.purpose?.trim()) && (
                       <p className="text-sm text-muted-foreground">
@@ -193,11 +195,11 @@ function MyBookingsContent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Unit</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t("common.date")}</TableHead>
+                        <TableHead>{t("common.unit")}</TableHead>
+                        <TableHead>{t("common.time")}</TableHead>
+                        <TableHead>{t("common.status")}</TableHead>
+                        <TableHead className="text-right">{t("common.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -229,12 +231,12 @@ function MyBookingsContent() {
                             {canModify(b.status) ? (
                               <>
                                 <Button variant="outline" size="sm" onClick={() => openReschedule(b)}>
-                                  Reschedule
+                                  {t("booking.reschedule")}
                                 </Button>
                                 {b.status === "confirmed" && (
                                   <>
                                     <Button variant="outline" size="sm" onClick={() => setCancelAction({ type: "single", bookingId: b.id })}>
-                                      Cancel
+                                      {t("common.cancel")}
                                     </Button>
                                     <Button
                                       variant="ghost"
@@ -272,14 +274,14 @@ function MyBookingsContent() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Room</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Purpose</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t("common.room")}</TableHead>
+                      <TableHead>{t("common.unit")}</TableHead>
+                      <TableHead>{t("roomDetail.location")}</TableHead>
+                      <TableHead>{t("common.date")}</TableHead>
+                      <TableHead>{t("common.time")}</TableHead>
+                      <TableHead>{t("common.purpose")}</TableHead>
+                      <TableHead>{t("common.status")}</TableHead>
+                      <TableHead className="text-right">{t("common.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -308,11 +310,11 @@ function MyBookingsContent() {
                           {canModify(b.status) ? (
                             <>
                               <Button variant="outline" size="sm" onClick={() => openReschedule(b)}>
-                                Reschedule
+                                {t("booking.reschedule")}
                               </Button>
                               {b.status === "confirmed" && (
                                 <Button variant="outline" size="sm" onClick={() => setCancelAction({ type: "single", bookingId: b.id })}>
-                                  Cancel
+                                  {t("common.cancel")}
                                 </Button>
                               )}
                             </>
@@ -352,7 +354,7 @@ function MyBookingsContent() {
             ? `This cancels this and all later occurrences from ${cancelAction.fromDate}.`
             : "This frees the slot(s) for others."
         }
-        confirmLabel="Cancel booking(s)"
+        confirmLabel={t("booking.cancelBooking")}
         destructive
         onConfirm={confirmCancel}
       />

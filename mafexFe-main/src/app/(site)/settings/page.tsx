@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
+import { useT } from "@/i18n/use-t";
 import { OTP_CODE_LENGTH } from "@/lib/constants/auth";
 import {
   listMyEmailHistory,
@@ -25,29 +26,42 @@ import type { UserEmailHistoryOut } from "@/lib/types/api";
 import { formatApiError } from "@/lib/utils/errors";
 import { useAuth } from "@/hooks/use-auth";
 
-const nameSchema = z.object({
-  full_name: z.string().min(1, "Enter your name").max(255),
-});
-
-const emailSchema = z.object({
-  new_email: z.string().email("Enter a valid email"),
-});
-
-const otpSchema = z.object({
-  otp: z
-    .string()
-    .length(OTP_CODE_LENGTH, `Enter the ${OTP_CODE_LENGTH}-digit code`)
-    .regex(/^\d+$/, "Digits only"),
-});
-
 function SettingsContent() {
   const { user, refresh } = useAuth();
+  const t = useT();
   const [history, setHistory] = useState<UserEmailHistoryOut[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [emailStep, setEmailStep] = useState<"email" | "otp">("email");
   const [pendingEmail, setPendingEmail] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
+
+  const nameSchema = useMemo(
+    () =>
+      z.object({
+        full_name: z.string().min(1, t("auth.enterName")).max(255),
+      }),
+    [t],
+  );
+
+  const emailSchema = useMemo(
+    () =>
+      z.object({
+        new_email: z.string().email(t("auth.invalidEmail")),
+      }),
+    [t],
+  );
+
+  const otpSchema = useMemo(
+    () =>
+      z.object({
+        otp: z
+          .string()
+          .length(OTP_CODE_LENGTH, t("auth.otpLength", { n: OTP_CODE_LENGTH }))
+          .regex(/^\d+$/, t("auth.digitsOnly")),
+      }),
+    [t],
+  );
 
   const nameForm = useForm<z.infer<typeof nameSchema>>({
     resolver: zodResolver(nameSchema),
@@ -89,7 +103,7 @@ function SettingsContent() {
     try {
       await updateMe({ full_name: values.full_name.trim() });
       await refresh();
-      toast.success("Name updated.");
+      toast.success(t("settings.nameUpdated"));
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -103,7 +117,7 @@ function SettingsContent() {
       await requestEmailChangeOtp({ new_email: values.new_email.trim() });
       setPendingEmail(values.new_email.trim());
       setEmailStep("otp");
-      toast.success("Check your new email for a verification code.");
+      toast.success(t("settings.checkNewEmail"));
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -121,7 +135,7 @@ function SettingsContent() {
       emailForm.reset({ new_email: "" });
       otpForm.reset({ otp: "" });
       void loadHistory();
-      toast.success("Email updated.");
+      toast.success(t("settings.emailUpdated"));
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -133,48 +147,50 @@ function SettingsContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-10 px-4 py-8">
-      <PageHeader title="Settings" description="Update your profile and email." />
+      <PageHeader title={t("settings.title")} description={t("settings.description")} />
 
       <section className="space-y-4 rounded-lg border p-6">
-        <h2 className="text-lg font-semibold">Profile</h2>
+        <h2 className="text-lg font-semibold">{t("settings.profile")}</h2>
         <form onSubmit={nameForm.handleSubmit(onSaveName)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="full_name">Full name</Label>
+            <Label htmlFor="full_name">{t("auth.fullName")}</Label>
             <Input id="full_name" {...nameForm.register("full_name")} />
           </div>
           <Button type="submit" disabled={savingName}>
-            {savingName ? "Saving…" : "Save name"}
+            {savingName ? t("common.saving") : t("settings.saveName")}
           </Button>
         </form>
       </section>
 
       <section className="space-y-4 rounded-lg border p-6">
-        <h2 className="text-lg font-semibold">Email</h2>
+        <h2 className="text-lg font-semibold">{t("settings.changeEmail")}</h2>
         <p className="text-sm text-muted-foreground">
-          Current: <span className="font-medium text-foreground">{user.email}</span>
+          {t("settings.currentEmail")}{" "}
+          <span className="font-medium text-foreground">{user.email}</span>
         </p>
         {emailStep === "email" ? (
           <form onSubmit={emailForm.handleSubmit(onRequestEmail)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new_email">New email</Label>
+              <Label htmlFor="new_email">{t("settings.newEmail")}</Label>
               <Input id="new_email" type="email" {...emailForm.register("new_email")} />
             </div>
             <Button type="submit" disabled={savingEmail}>
-              {savingEmail ? "Sending…" : "Send verification code"}
+              {savingEmail ? t("auth.sending") : t("settings.sendVerification")}
             </Button>
           </form>
         ) : (
           <form onSubmit={otpForm.handleSubmit(onVerifyEmail)} className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Enter the code sent to <span className="font-medium text-foreground">{pendingEmail}</span>
+              {t("auth.enterCodeSentTo")}{" "}
+              <span className="font-medium text-foreground">{pendingEmail}</span>
             </p>
             <div className="space-y-2">
-              <Label htmlFor="otp">Verification code</Label>
+              <Label htmlFor="otp">{t("auth.otpLabel")}</Label>
               <Input id="otp" inputMode="numeric" {...otpForm.register("otp")} />
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={savingEmail}>
-                {savingEmail ? "Verifying…" : "Confirm new email"}
+                {savingEmail ? t("auth.verifying") : t("settings.confirmNewEmail")}
               </Button>
               <Button
                 type="button"
@@ -185,7 +201,7 @@ function SettingsContent() {
                   otpForm.reset();
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </form>
@@ -193,25 +209,30 @@ function SettingsContent() {
       </section>
 
       <section className="space-y-4 rounded-lg border p-6">
-        <h2 className="text-lg font-semibold">Previous emails</h2>
+        <h2 className="text-lg font-semibold">{t("settings.previousEmails")}</h2>
         {loadingHistory ? (
           <LoadingState />
         ) : history.length === 0 ? (
-          <EmptyState title="No previous emails" description="Past addresses appear here after you change email." />
+          <EmptyState
+            title={t("settings.noPreviousEmails")}
+            description={t("settings.noPreviousEmailsHint")}
+          />
         ) : (
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Changed</TableHead>
+                  <TableHead>{t("common.email")}</TableHead>
+                  <TableHead>{t("settings.changed")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {history.map((h) => (
                   <TableRow key={h.id}>
                     <TableCell>{h.email}</TableCell>
-                    <TableCell className="text-muted-foreground">{h.changed_at.slice(0, 19).replace("T", " ")}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {h.changed_at.slice(0, 19).replace("T", " ")}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

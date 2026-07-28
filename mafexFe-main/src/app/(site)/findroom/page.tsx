@@ -1,8 +1,8 @@
 import { RoomFilters } from "@/features/rooms/RoomFilters";
 import { FindRoomResults } from "@/features/rooms/FindRoomResults";
+import { FindRoomHeader } from "@/features/rooms/FindRoomHeader";
+import { FindRoomFiltersError } from "@/features/rooms/FindRoomFiltersError";
 import { listAmenities } from "@/lib/api/amenities";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { ErrorState } from "@/components/shared/ErrorState";
 import {
   parseRoomListSearchParams,
   recordToSearchParams,
@@ -26,17 +26,14 @@ export default async function FindRoomPage({ searchParams }: PageProps) {
   } catch (e) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10">
-        <ErrorState title="Could not load filters" message={formatApiError(e)} />
+        <FindRoomFiltersError message={formatApiError(e)} />
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-8">
-      <PageHeader
-        title="Book a place"
-        description="Pick a date and time range and unit type to see what you can book."
-      />
+      <FindRoomHeader />
       <RoomFilters amenities={amenities} />
       <FindRoomResults params={params} searchParamsString={sp.toString()} />
     </div>

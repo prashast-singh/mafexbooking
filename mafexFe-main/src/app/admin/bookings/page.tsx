@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { AdminBookingsTable, type CancelTarget } from "@/features/admin/AdminBookingsTable";
 import { RescheduleBookingDialog, type RescheduleTarget } from "@/features/bookings/RescheduleBookingDialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useT } from "@/i18n/use-t";
 import { adminCancelBooking, adminCancelBookingSeries, listAdminBookings } from "@/lib/api/admin";
 import { listRooms } from "@/lib/api/rooms";
 import { listMyManagedRooms } from "@/lib/api/users";
@@ -47,6 +48,7 @@ const selectClass =
   "flex h-9 min-w-[140px] rounded-md border border-input bg-transparent px-3 py-1 text-sm";
 
 export default function AdminBookingsPage() {
+  const t = useT();
   const { user } = useAuth();
   const isGlobalAdmin = user?.role === "admin";
   const [managedRooms, setManagedRooms] = useState<ManagedRoomBrief[]>([]);
@@ -128,16 +130,16 @@ export default function AdminBookingsPage() {
     try {
       if (cancelTarget.type === "single") {
         await adminCancelBooking(cancelTarget.bookingId);
-        toast.success("Booking cancelled.");
+        toast.success(t("admin.bookingCancelled"));
       } else if (cancelTarget.fromDate) {
         const out = await adminCancelBookingSeries(cancelTarget.seriesId, {
           scope: "from_date",
           from_date: cancelTarget.fromDate,
         });
-        toast.success(`Cancelled ${out.cancelled_count} booking(s).`);
+        toast.success(t("admin.cancelledCount", { count: out.cancelled_count }));
       } else {
         const out = await adminCancelBookingSeries(cancelTarget.seriesId, { scope: "all_future" });
-        toast.success(`Cancelled ${out.cancelled_count} future booking(s).`);
+        toast.success(t("admin.cancelledFutureCount", { count: out.cancelled_count }));
       }
       setCancelTarget(null);
       void fetchBookings(applied, true);
@@ -155,20 +157,20 @@ export default function AdminBookingsPage() {
   return (
     <div className="space-y-8 p-6">
       <PageHeader
-        title={isGlobalAdmin ? "All bookings" : "Room bookings"}
+        title={isGlobalAdmin ? t("admin.allBookings") : t("admin.roomBookings")}
         description={
           isGlobalAdmin
-            ? "View and cancel past and upcoming bookings."
+            ? t("admin.allBookingsDescription")
             : managedRooms.length > 0
-              ? `Manage bookings for: ${managedRooms.map((r) => r.name).join(", ")}`
-              : "View and cancel bookings for rooms you administer."
+              ? t("admin.manageBookingsFor", { rooms: managedRooms.map((r) => r.name).join(", ") })
+              : t("admin.roomBookingsDescription")
         }
       />
 
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="date-from">
-            From
+            {t("admin.from")}
           </label>
           <Input
             id="date-from"
@@ -179,7 +181,7 @@ export default function AdminBookingsPage() {
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="date-to">
-            To
+            {t("admin.to")}
           </label>
           <Input
             id="date-to"
@@ -190,7 +192,7 @@ export default function AdminBookingsPage() {
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="room-id">
-            Room
+            {t("common.room")}
           </label>
           <select
             id="room-id"
@@ -198,7 +200,7 @@ export default function AdminBookingsPage() {
             value={draft.roomId}
             onChange={(e) => onSelectChange("roomId", e.target.value)}
           >
-            <option value="">{isGlobalAdmin ? "All rooms" : "All my rooms"}</option>
+            <option value="">{isGlobalAdmin ? t("admin.allRooms") : t("admin.allMyRooms")}</option>
             {(isGlobalAdmin ? allRooms : managedRooms).map((room) => (
               <option key={room.id} value={String(room.id)}>
                 {room.name}
@@ -208,7 +210,7 @@ export default function AdminBookingsPage() {
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="status">
-            Status
+            {t("common.status")}
           </label>
           <select
             id="status"
@@ -216,16 +218,16 @@ export default function AdminBookingsPage() {
             value={draft.status}
             onChange={(e) => onSelectChange("status", e.target.value as BookingStatus)}
           >
-            <option value="">All statuses</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="pending">Pending</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="denied">Denied</option>
+            <option value="">{t("admin.allStatuses")}</option>
+            <option value="confirmed">{t("admin.confirmed")}</option>
+            <option value="pending">{t("admin.pending")}</option>
+            <option value="cancelled">{t("admin.cancelled")}</option>
+            <option value="denied">{t("admin.denied")}</option>
           </select>
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="booking-kind">
-            Booking type
+            {t("admin.bookingType")}
           </label>
           <select
             id="booking-kind"
@@ -233,20 +235,20 @@ export default function AdminBookingsPage() {
             value={draft.bookingKind}
             onChange={(e) => onSelectChange("bookingKind", e.target.value as BookingKind)}
           >
-            <option value="all">All types</option>
-            <option value="single">Single</option>
-            <option value="series">Series</option>
+            <option value="all">{t("admin.allTypes")}</option>
+            <option value="single">{t("admin.single")}</option>
+            <option value="series">{t("admin.series")}</option>
           </select>
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="series-id">
-            Series #
+            {t("admin.seriesNumber")}
           </label>
           <Input
             id="series-id"
             type="number"
             min={1}
-            placeholder="e.g. 12"
+            placeholder={t("admin.seriesPlaceholder")}
             value={draft.seriesId}
             onChange={(e) => setDraft((d) => ({ ...d, seriesId: e.target.value }))}
             disabled={draft.bookingKind === "single"}
@@ -254,11 +256,11 @@ export default function AdminBookingsPage() {
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="user-q">
-            User search
+            {t("admin.userSearch")}
           </label>
           <Input
             id="user-q"
-            placeholder="email or name"
+            placeholder={t("admin.userSearchPlaceholder")}
             value={draft.userQ}
             onChange={(e) => setDraft((d) => ({ ...d, userQ: e.target.value }))}
             onKeyDown={(e) => {
@@ -269,22 +271,22 @@ export default function AdminBookingsPage() {
         <div className="flex gap-1">
           {(["all", "upcoming", "past"] as const).map((v) => (
             <Button key={v} variant={draft.view === v ? "secondary" : "outline"} size="sm" onClick={() => applyView(v)}>
-              {v === "all" ? "All" : v === "upcoming" ? "Upcoming" : "Past"}
+              {v === "all" ? t("admin.viewAll") : v === "upcoming" ? t("admin.upcoming") : t("admin.past")}
             </Button>
           ))}
         </div>
         <Button onClick={applyFilters} disabled={refreshing}>
-          Search
+          {t("common.search")}
         </Button>
         <Button variant="outline" onClick={() => void fetchBookings(applied, true)} disabled={refreshing}>
-          Refresh
+          {t("common.refresh")}
         </Button>
       </div>
 
-      {refreshing && <p className="text-sm text-muted-foreground">Updating bookings…</p>}
+      {refreshing && <p className="text-sm text-muted-foreground">{t("admin.updatingBookings")}</p>}
 
       {rows.length === 0 ? (
-        <EmptyState title="No bookings" description="Adjust filters or check back later." />
+        <EmptyState title={t("admin.noBookings")} description={t("admin.noBookingsDescription")} />
       ) : (
         <AdminBookingsTable
           rows={rows}
@@ -316,10 +318,12 @@ export default function AdminBookingsPage() {
       <ConfirmDialog
         open={cancelTarget != null}
         onOpenChange={(o) => !o && setCancelTarget(null)}
-        title={cancelTarget?.type === "single" ? "Cancel booking?" : "Cancel series bookings?"}
-        description="This action cannot be undone."
-        confirmLabel="Cancel booking(s)"
-        cancelLabel="Go back"
+        title={
+          cancelTarget?.type === "single" ? t("admin.cancelBookingConfirm") : t("admin.cancelSeriesConfirm")
+        }
+        description={t("admin.cannotUndo")}
+        confirmLabel={t("admin.cancelBookingsConfirmLabel")}
+        cancelLabel={t("admin.goBack")}
         destructive
         onConfirm={confirmCancel}
       />

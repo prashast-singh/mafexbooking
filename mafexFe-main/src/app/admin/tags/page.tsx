@@ -14,9 +14,11 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { createTag, deleteTag } from "@/lib/api/admin";
 import { listTags } from "@/lib/api/tags";
 import type { TagOut } from "@/lib/types/api";
+import { useT } from "@/i18n/use-t";
 import { formatApiError } from "@/lib/utils/errors";
 
 export default function AdminTagsPage() {
+  const t = useT();
   const [rows, setRows] = useState<TagOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -68,10 +70,7 @@ export default function AdminTagsPage() {
 
   return (
     <div className="space-y-8 p-6">
-      <PageHeader
-        title="Tags"
-        description="Restrict room visibility: tagged users only see rooms with matching tags."
-      />
+      <PageHeader title={t("admin.tags")} description={t("admin.tagsDescription")} />
       <form onSubmit={onCreate} className="flex max-w-xl flex-wrap items-end gap-3 rounded-lg border p-4">
         <div className="min-w-[160px] flex-1 space-y-1">
           <Label htmlFor="tag-name">Name</Label>
@@ -101,12 +100,12 @@ export default function AdminTagsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{t.description ?? "—"}</TableCell>
+              {rows.map((tag) => (
+                <TableRow key={tag.id}>
+                  <TableCell className="font-medium">{tag.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{tag.description ?? "—"}</TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" variant="destructive" onClick={() => setDelId(t.id)}>
+                    <Button size="sm" variant="destructive" onClick={() => setDelId(tag.id)}>
                       Delete
                     </Button>
                   </TableCell>

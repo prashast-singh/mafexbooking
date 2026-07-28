@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useT } from "@/i18n/use-t";
 import { getBookingPolicy, patchBookingPolicy } from "@/lib/api/admin";
 import { formatApiError } from "@/lib/utils/errors";
 
 export default function AdminBookingPolicyPage() {
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [slotMinutes, setSlotMinutes] = useState(30);
@@ -52,7 +54,7 @@ export default function AdminBookingPolicyPage() {
       setMaxHoursPerDay(updated.max_booking_hours_per_day);
       setMaxAdvanceDays(updated.max_advance_days);
       setCancellationCutoff(updated.cancellation_cutoff_minutes);
-      toast.success("Booking policy saved.");
+      toast.success(t("admin.policySaved"));
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -65,12 +67,12 @@ export default function AdminBookingPolicyPage() {
   return (
     <div className="space-y-8 p-6">
       <PageHeader
-        title="Booking policy"
-        description="Global limits for slots, daily hours, advance booking, and cancellation cutoff."
+        title={t("admin.bookingPolicyTitle")}
+        description={t("admin.bookingPolicyDescription")}
       />
       <form onSubmit={onSave} className="max-w-xl space-y-4 rounded-lg border p-4">
         <div className="space-y-1">
-          <Label htmlFor="slot-minutes">Slot length (minutes)</Label>
+          <Label htmlFor="slot-minutes">{t("admin.slotMinutes")}</Label>
           <Input
             id="slot-minutes"
             type="number"
@@ -79,10 +81,10 @@ export default function AdminBookingPolicyPage() {
             value={slotMinutes}
             onChange={(e) => setSlotMinutes(Number.parseInt(e.target.value, 10) || 15)}
           />
-          <p className="text-xs text-muted-foreground">Allowed range: 15–120.</p>
+          <p className="text-xs text-muted-foreground">{t("admin.slotMinutesHint")}</p>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="max-hours">Max booking hours per day</Label>
+          <Label htmlFor="max-hours">{t("admin.maxHoursPerDay")}</Label>
           <Input
             id="max-hours"
             type="number"
@@ -91,12 +93,10 @@ export default function AdminBookingPolicyPage() {
             value={maxHoursPerDay}
             onChange={(e) => setMaxHoursPerDay(Number.parseInt(e.target.value, 10) || 1)}
           />
-          <p className="text-xs text-muted-foreground">
-            Total confirmed booking time a user may hold on one calendar day (1–24 hours).
-          </p>
+          <p className="text-xs text-muted-foreground">{t("admin.maxHoursPerDayHint")}</p>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="max-advance">Max advance days</Label>
+          <Label htmlFor="max-advance">{t("admin.maxAdvanceDays")}</Label>
           <Input
             id="max-advance"
             type="number"
@@ -105,10 +105,10 @@ export default function AdminBookingPolicyPage() {
             value={maxAdvanceDays}
             onChange={(e) => setMaxAdvanceDays(Number.parseInt(e.target.value, 10) || 1)}
           />
-          <p className="text-xs text-muted-foreground">How far ahead users can book (1–365 days).</p>
+          <p className="text-xs text-muted-foreground">{t("admin.maxAdvanceDaysHint")}</p>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="cancel-cutoff">Cancellation cutoff (minutes)</Label>
+          <Label htmlFor="cancel-cutoff">{t("admin.cancellationCutoff")}</Label>
           <Input
             id="cancel-cutoff"
             type="number"
@@ -117,12 +117,10 @@ export default function AdminBookingPolicyPage() {
             value={cancellationCutoff}
             onChange={(e) => setCancellationCutoff(Number.parseInt(e.target.value, 10) || 0)}
           />
-          <p className="text-xs text-muted-foreground">
-            Minimum notice before start for user cancellations (0–10080 minutes).
-          </p>
+          <p className="text-xs text-muted-foreground">{t("admin.cancellationCutoffHint")}</p>
         </div>
         <Button type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save policy"}
+          {saving ? t("common.saving") : t("admin.savePolicy")}
         </Button>
       </form>
     </div>

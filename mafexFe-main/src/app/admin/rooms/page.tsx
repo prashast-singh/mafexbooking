@@ -20,6 +20,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { createRoom } from "@/lib/api/admin";
 import { listRooms } from "@/lib/api/rooms";
 import type { RoomBrowseItem } from "@/lib/types/api";
+import { useT } from "@/i18n/use-t";
 import { formatApiError } from "@/lib/utils/errors";
 import { isValidTimeRange } from "@/lib/utils/time-params";
 import { inputTimeToApi } from "@/lib/utils/time-format";
@@ -40,6 +41,7 @@ const createSchema = z
   );
 
 export default function AdminRoomsPage() {
+  const t = useT();
   const [rows, setRows] = useState<RoomBrowseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -98,14 +100,14 @@ export default function AdminRoomsPage() {
   return (
     <div className="space-y-8 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <PageHeader title="Rooms" description="Create and manage bookable spaces." />
+        <PageHeader title={t("admin.rooms")} description={t("admin.roomsDescription")} />
         <Dialog open={open} onOpenChange={setOpen}>
           <Button type="button" onClick={() => setOpen(true)}>
-            New room
+            {t("admin.createRoom")}
           </Button>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>New room</DialogTitle>
+              <DialogTitle>{t("admin.createRoom")}</DialogTitle>
             </DialogHeader>
             <form onSubmit={form.handleSubmit(onCreate)} className="space-y-3">
               <div className="space-y-1">
@@ -171,17 +173,17 @@ export default function AdminRoomsPage() {
         </Dialog>
       </div>
       {rows.length === 0 ? (
-        <EmptyState title="No rooms" description="Create your first room to get started." />
+        <EmptyState title={t("admin.noRooms")} description={t("admin.noRoomsDescription")} />
       ) : (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>Capacity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Edit</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("admin.mode")}</TableHead>
+                <TableHead>{t("common.capacity")}</TableHead>
+                <TableHead>{t("common.status")}</TableHead>
+                <TableHead className="text-right">{t("admin.edit")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -200,7 +202,7 @@ export default function AdminRoomsPage() {
                       href={`/admin/rooms/${r.id}`}
                       className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
                     >
-                      Edit
+                      {t("admin.edit")}
                     </Link>
                   </TableCell>
                 </TableRow>

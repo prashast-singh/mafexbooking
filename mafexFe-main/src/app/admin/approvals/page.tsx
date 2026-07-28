@@ -8,11 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useT } from "@/i18n/use-t";
 import { approveUser, pendingApprovals, rejectUser } from "@/lib/api/admin";
 import type { AdminUserOut } from "@/lib/types/api";
 import { formatApiError } from "@/lib/utils/errors";
 
 export default function AdminApprovalsPage() {
+  const t = useT();
   const [rows, setRows] = useState<AdminUserOut[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ export default function AdminApprovalsPage() {
   async function approve(id: number) {
     try {
       await approveUser(id);
-      toast.success("User approved.");
+      toast.success(t("admin.userApproved"));
       void load();
     } catch (e) {
       toast.error(formatApiError(e));
@@ -44,7 +46,7 @@ export default function AdminApprovalsPage() {
   async function reject(id: number) {
     try {
       await rejectUser(id);
-      toast.success("User rejected.");
+      toast.success(t("admin.userRejected"));
       void load();
     } catch (e) {
       toast.error(formatApiError(e));
@@ -55,19 +57,22 @@ export default function AdminApprovalsPage() {
 
   return (
     <div className="space-y-8 p-6">
-      <PageHeader title="Pending approvals" description="Approve or reject new signups." />
+      <PageHeader
+        title={t("admin.pendingApprovals")}
+        description={t("admin.pendingApprovalsDescription")}
+      />
       {rows.length === 0 ? (
-        <EmptyState title="No pending users" description="New signups will appear here." />
+        <EmptyState title={t("admin.noPendingUsers")} description={t("admin.noPendingUsersDescription")} />
       ) : (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="min-w-[220px]">How they found us / intended use</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("common.email")}</TableHead>
+                <TableHead>{t("admin.type")}</TableHead>
+                <TableHead className="min-w-[220px]">{t("admin.signupIntent")}</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -81,10 +86,10 @@ export default function AdminApprovalsPage() {
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
                     <Button size="sm" onClick={() => void approve(u.id)}>
-                      Approve
+                      {t("admin.approve")}
                     </Button>
                     <Button size="sm" variant="destructive" onClick={() => void reject(u.id)}>
-                      Reject
+                      {t("admin.reject")}
                     </Button>
                   </TableCell>
                 </TableRow>

@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AdminBookingRequestsTable } from "@/features/admin/AdminBookingRequestsTable";
 import { useAuth } from "@/hooks/use-auth";
+import { useT } from "@/i18n/use-t";
 import {
   approvePendingBooking,
   approveSeriesPending,
@@ -32,6 +33,7 @@ type DenyAction =
   | { type: "series"; seriesId: number };
 
 export default function AdminBookingRequestsPage() {
+  const t = useT();
   const { user } = useAuth();
   const isGlobalAdmin = user?.role === "admin";
   const [rows, setRows] = useState<PendingBookingOut[]>([]);
@@ -88,7 +90,7 @@ export default function AdminBookingRequestsPage() {
   async function approve(id: number) {
     try {
       await approvePendingBooking(id);
-      toast.success("Booking approved.");
+      toast.success(t("admin.bookingApproved"));
       void load(roomId, true);
     } catch (e) {
       toast.error(formatApiError(e));
@@ -101,10 +103,10 @@ export default function AdminBookingRequestsPage() {
     try {
       if (denyAction.type === "single") {
         await denyPendingBooking(denyAction.bookingId, { reason });
-        toast.success("Booking denied.");
+        toast.success(t("admin.bookingDenied"));
       } else {
         const out = await denySeriesPending(denyAction.seriesId, { reason });
-        toast.success(`Denied ${out.processed_count} booking(s).`);
+        toast.success(t("admin.deniedCount", { count: out.processed_count }));
       }
       setDenyAction(null);
       setDenyReason("");
@@ -117,7 +119,7 @@ export default function AdminBookingRequestsPage() {
   async function approveSeries(seriesId: number) {
     try {
       const out = await approveSeriesPending(seriesId);
-      toast.success(`Approved ${out.processed_count} booking(s).`);
+      toast.success(t("admin.approvedCount", { count: out.processed_count }));
       void load(roomId, true);
     } catch (e) {
       toast.error(formatApiError(e));
@@ -130,11 +132,14 @@ export default function AdminBookingRequestsPage() {
 
   return (
     <div className="space-y-8 p-6">
-      <PageHeader title="Booking requests" description="Approve or deny pending bookings." />
+      <PageHeader
+        title={t("admin.bookingRequests")}
+        description={t("admin.bookingRequestsDescription")}
+      />
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="room-id">
-            Room
+            {t("common.room")}
           </label>
           <select
             id="room-id"
@@ -142,7 +147,7 @@ export default function AdminBookingRequestsPage() {
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
           >
-            <option value="">{isGlobalAdmin ? "All rooms" : "All my rooms"}</option>
+            <option value="">{isGlobalAdmin ? t("admin.allRooms") : t("admin.allMyRooms")}</option>
             {roomOptions.map((room) => (
               <option key={room.id} value={String(room.id)}>
                 {room.name}
@@ -151,14 +156,17 @@ export default function AdminBookingRequestsPage() {
           </select>
         </div>
         <Button variant="outline" onClick={() => void load(roomId, true)} disabled={refreshing}>
-          Refresh
+          {t("common.refresh")}
         </Button>
       </div>
 
-      {refreshing && <p className="text-sm text-muted-foreground">Updating requests…</p>}
+      {refreshing && <p className="text-sm text-muted-foreground">{t("admin.updatingRequests")}</p>}
 
       {rows.length === 0 ? (
-        <EmptyState title="No pending bookings" description="Requests will appear here." />
+        <EmptyState
+          title={t("admin.noPendingBookings")}
+          description={t("admin.noPendingBookingsDescription")}
+        />
       ) : (
         <AdminBookingRequestsTable
           rows={rows}
@@ -177,19 +185,19 @@ export default function AdminBookingRequestsPage() {
             setDenyReason("");
           }
         }}
-        title={denyAction?.type === "series" ? "Deny all pending in series?" : "Deny booking?"}
-        description="Optionally provide a reason — it will be emailed to the user."
-        confirmLabel="Deny"
+        title={denyAction?.type === "series" ? t("admin.denySeriesPending") : t("admin.denyBooking")}
+        description={t("admin.denyReasonDescription")}
+        confirmLabel={t("admin.deny")}
         destructive
         onConfirm={confirmDeny}
       >
         <div className="space-y-2 pt-2">
-          <Label htmlFor="deny-reason">Reason (optional)</Label>
+          <Label htmlFor="deny-reason">{t("admin.reasonOptional")}</Label>
           <Input
             id="deny-reason"
             value={denyReason}
             onChange={(e) => setDenyReason(e.target.value)}
-            placeholder="Not available on this date"
+            placeholder={t("admin.reasonPlaceholder")}
           />
         </div>
       </ConfirmDialog>

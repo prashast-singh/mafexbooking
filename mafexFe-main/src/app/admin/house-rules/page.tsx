@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useT } from "@/i18n/use-t";
 import { getHouseRules, patchHouseRules } from "@/lib/api/admin";
 import { formatApiError } from "@/lib/utils/errors";
 
 export default function AdminHouseRulesPage() {
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState("");
@@ -43,8 +45,8 @@ export default function AdminHouseRulesPage() {
       setVersion(updated.version);
       toast.success(
         updated.version !== version
-          ? `House rules saved (version ${updated.version}). Users must accept again.`
-          : "House rules saved.",
+          ? t("admin.houseRulesSavedBump", { version: updated.version })
+          : t("admin.houseRulesSaved"),
       );
     } catch (err) {
       toast.error(formatApiError(err));
@@ -58,24 +60,24 @@ export default function AdminHouseRulesPage() {
   return (
     <div className="space-y-8 p-6">
       <PageHeader
-        title="House rules"
-        description="Terms users must accept before using Workspace. Saving changed text bumps the version and prompts everyone to re-accept."
+        title={t("admin.houseRulesTitle")}
+        description={t("admin.houseRulesDescription")}
       />
       <form onSubmit={onSave} className="max-w-2xl space-y-4 rounded-lg border p-4">
-        <p className="text-xs text-muted-foreground">Current version: {version}</p>
+        <p className="text-xs text-muted-foreground">{t("admin.currentVersion", { version })}</p>
         <div className="space-y-1">
-          <Label htmlFor="house-rules-content">Rules text</Label>
+          <Label htmlFor="house-rules-content">{t("admin.rulesText")}</Label>
           <Textarea
             id="house-rules-content"
             rows={16}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Leave empty to disable the acceptance gate until you publish rules."
+            placeholder={t("admin.houseRulesPlaceholder")}
             className="min-h-[280px] font-mono text-sm"
           />
         </div>
         <Button type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save house rules"}
+          {saving ? t("common.saving") : t("admin.saveHouseRules")}
         </Button>
       </form>
     </div>

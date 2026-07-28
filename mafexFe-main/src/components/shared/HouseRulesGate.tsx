@@ -13,11 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useT } from "@/i18n/use-t";
 import { acceptMyHouseRules, getMyHouseRules } from "@/lib/api/users";
 import { formatApiError } from "@/lib/utils/errors";
 
 export function HouseRulesGate() {
   const { user, loading, refresh, logout } = useAuth();
+  const t = useT();
   const [content, setContent] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
 
@@ -48,7 +50,7 @@ export function HouseRulesGate() {
     try {
       await acceptMyHouseRules();
       await refresh();
-      toast.success("House rules accepted.");
+      toast.success(t("houseRules.accepted"));
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -67,20 +69,18 @@ export function HouseRulesGate() {
     >
       <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>House rules</DialogTitle>
-          <DialogDescription>
-            Please read and accept the current house rules to continue using Workspace.
-          </DialogDescription>
+          <DialogTitle>{t("houseRules.title")}</DialogTitle>
+          <DialogDescription>{t("houseRules.description")}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[50vh] overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-sm">
-          {content === null ? "Loading…" : content || "No rules text available."}
+          {content === null ? t("houseRules.loading") : content || t("houseRules.empty")}
         </div>
         <DialogFooter className="sm:justify-between">
           <Button type="button" variant="outline" onClick={logout} disabled={accepting}>
-            Log out
+            {t("common.logOut")}
           </Button>
           <Button type="button" onClick={() => void onAccept()} disabled={accepting || content === null}>
-            {accepting ? "Accepting…" : "Accept"}
+            {accepting ? t("common.accepting") : t("common.accept")}
           </Button>
         </DialogFooter>
       </DialogContent>

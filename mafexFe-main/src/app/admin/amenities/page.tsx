@@ -14,9 +14,11 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { createAmenity, deleteAmenity } from "@/lib/api/admin";
 import { listAmenities } from "@/lib/api/amenities";
 import type { AmenityOut } from "@/lib/types/api";
+import { useT } from "@/i18n/use-t";
 import { formatApiError } from "@/lib/utils/errors";
 
 export default function AdminAmenitiesPage() {
+  const t = useT();
   const [rows, setRows] = useState<AmenityOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -68,7 +70,7 @@ export default function AdminAmenitiesPage() {
 
   return (
     <div className="space-y-8 p-6">
-      <PageHeader title="Amenities" description="Labels used when filtering rooms." />
+      <PageHeader title={t("admin.amenities")} description={t("admin.amenitiesDescription")} />
       <form onSubmit={onCreate} className="flex max-w-xl flex-wrap items-end gap-3 rounded-lg border p-4">
         <div className="min-w-[160px] flex-1 space-y-1">
           <Label htmlFor="am-name">Name</Label>

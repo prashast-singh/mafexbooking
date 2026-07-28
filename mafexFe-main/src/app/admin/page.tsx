@@ -7,11 +7,13 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { useT } from "@/i18n/use-t";
 import { dashboardSummary } from "@/lib/api/admin";
 import type { AdminDashboardSummary } from "@/lib/types/api";
 import { formatApiError } from "@/lib/utils/errors";
 
 export default function AdminDashboardPage() {
+  const t = useT();
   const [data, setData] = useState<AdminDashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,33 +40,37 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8 p-6">
-      <PageHeader title="Dashboard" description="Overview of your workspace." />
+      <PageHeader title={t("admin.dashboard")} description={t("admin.dashboardDescription")} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending approvals</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t("admin.pendingApprovals")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{s.pending_approvals}</p>
             <Link href="/admin/approvals" className="text-xs text-primary underline-offset-4 hover:underline">
-              Review →
+              {t("admin.reviewLink")}
             </Link>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Rooms</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.rooms")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{s.rooms_total}</p>
             <Link href="/admin/rooms" className="text-xs text-primary underline-offset-4 hover:underline">
-              Manage →
+              {t("admin.manageLink")}
             </Link>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Bookings today</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t("admin.bookingsToday")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{s.bookings_today}</p>
@@ -72,12 +78,12 @@ export default function AdminDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Users</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.users")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{s.users_total}</p>
             <Link href="/admin/users" className="text-xs text-primary underline-offset-4 hover:underline">
-              Directory →
+              {t("admin.directoryLink")}
             </Link>
           </CardContent>
         </Card>

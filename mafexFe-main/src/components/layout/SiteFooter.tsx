@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
+
+import { useT } from "@/i18n/use-t";
 
 const socialLinks = [
   {
@@ -25,6 +29,8 @@ const socialLinks = [
 ] as const;
 
 export function SiteFooter() {
+  const t = useT();
+
   return (
     <footer className="border-t bg-zinc-950 text-zinc-300">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:grid-cols-[auto_1fr_auto] sm:items-start">
@@ -46,16 +52,14 @@ export function SiteFooter() {
         </a>
 
         <div className="space-y-2 text-sm">
-          <p className="font-medium text-zinc-100">
-            MAFEX - Marburg Center for Entrepreneurship and Innovation
-          </p>
+          <p className="font-medium text-zinc-100">{t("footer.orgName")}</p>
           <p>
             Hans-Meerwein-Straße 6
             <br />
             35043 Marburg
           </p>
           <p>
-            Phone:{" "}
+            {t("footer.phone")}:{" "}
             <a href="tel:+4964212821753" className="hover:text-white hover:underline">
               +49 6421/28-21753
             </a>
@@ -66,7 +70,7 @@ export function SiteFooter() {
             </a>
           </p>
           <div className="pt-2">
-            <p className="mb-2 text-zinc-400">Social Media Contacts</p>
+            <p className="mb-2 text-zinc-400">{t("footer.social")}</p>
             <div className="flex flex-wrap items-center gap-3">
               {socialLinks.map(({ href, label, Icon }) => (
                 <a
@@ -92,7 +96,7 @@ export function SiteFooter() {
             rel="noopener noreferrer"
             className="underline-offset-4 hover:text-white hover:underline"
           >
-            Impressum
+            {t("footer.impressum")}
           </a>
         </div>
       </div>
