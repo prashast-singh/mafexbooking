@@ -105,9 +105,6 @@ export function AvailabilityGrid({ grid, loading, selected, onSelect }: Availabi
                 <div className="max-w-[120px] truncate" title={u.unit_name}>
                   {u.unit_name}
                 </div>
-                <div className="text-xs font-normal text-muted-foreground capitalize">
-                  {u.unit_type.replace(/_/g, " ")}
-                </div>
               </th>
             ))}
           </tr>
